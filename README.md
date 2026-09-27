@@ -27,6 +27,8 @@ Deterministic path (no model involved):
 5. **Record.** Each decision is written to a hash-chained outbox and issued a signed decision receipt with a Merkle inclusion proof. The console reads the decision list and a server-sent-event stream.
 6. **Revoke.** The operator revokes the chain. The grant is marked revoked before anything is published to the outbox (a bus failure still leaves the chain revoked), the revocation epoch increments, and the agent's next exchange returns 403 `grant_not_active`. An effect attempted under the effect gate is refused with `grant_revoked`.
 
+The operator console at `/glasswing` on the dashboard drives this workflow (PR #8, pending review), and the protected site (PR-2, Codex, in progress) hosts the agent runner and the six operator endpoints the console calls through an allow-listed dashboard proxy.
+
 Weekend packages on top of the kernel:
 
 - `@aidenid/agent-client` — `mintAgentKey` (Ed25519), `exchangeSession`, `buildSignedHeaders` (DPoP proof plus an RFC 9421 HTTP message signature) and `signedFetch`. This is the agent side of beats 1, 3 and 4.
@@ -42,7 +44,7 @@ Real, running in-process for the demo:
 
 - The clearance kernel: policy engine with the six-outcome ladder, crypto (DPoP, HTTP message signatures, session tokens, replay cache), control-plane API (targets, grants, session exchange, revoke, kill switch, decisions list and SSE stream, signed receipts), verifier middleware, hash-chained outbox and transparency commitments.
 - Grant issuance, session exchange, scope enforcement, revocation, and every decision and receipt shown in the console come from the server, not from the UI.
-- The weekend packages (`@aidenid/agent-client`, `@aidenid/jev`, the injectable session signer with its JWKS route, and the `withChainAuthority` effect gate) each ship with local tests, and an in-process kernel end-to-end test proves grant → exchange → signed request verified against the published JWKS → effect under the gate → revoke → effect refused and re-exchange refused. Counts per PR are in `docs/aidenid-build/evidence/PR-00-navigator.md`.
+- The weekend packages (`@aidenid/agent-client`, `@aidenid/jev`, the injectable session signer with its JWKS route, and the `withChainAuthority` effect gate) each ship with local tests and are merged into `main` (`65b498f`) with the foundation. An in-process kernel end-to-end test (PR #6, open) proves grant → exchange → signed request verified against the published JWKS → effect under the gate → revoke → effect refused and re-exchange refused. The Glasswing console is PR #8, pending review. Counts per PR are in `docs/aidenid-build/evidence/PR-00-navigator.md`.
 - The 84-file test suite of the kernel (620 tests) passes at the prior-work commit.
 
 All of that is local evidence. Hosted GitHub Actions are unavailable on this account (billing), so nothing in this repository is a CI-green claim.
@@ -90,7 +92,7 @@ Optional environment, all server-side:
 | `ANTHROPIC_API_KEY` | Enables JEV through the Anthropic SDK. Omit and JEV reports `unavailable`. Never put it in a client bundle. |
 | `JEV_MODEL` | Overrides the JEV model (default `claude-opus-5`). |
 
-The agent side is the `@aidenid/agent-client` package (mint key, exchange session, signed fetch). The Glasswing console is added in PR-3; its start command and the exact click path for the demo are in `docs/runbook.md`.
+The agent side is the `@aidenid/agent-client` package (mint key, exchange session, signed fetch). The Glasswing operations console (PR #8, pending review) is served by the dashboard at http://127.0.0.1:3000/glasswing. It needs the three variables the launcher provides, `AIDENID_PROTECTED_SITE_URL`, `AIDENID_OPERATOR_TOKEN` and `AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN`, and cannot act without them; the operator token stays server-side behind the dashboard proxy. With login disabled the page issues its own loopback-only session cookie and refuses to do so off loopback. The exact click path for the demo is in `docs/runbook.md`.
 
 Keep every key in `.env`, never in this repository, chat, logs or a client bundle.
 
