@@ -16,13 +16,24 @@ const CATALOG = `${ORIGIN}/api/catalog`;
 function injectFetch(app: Awaited<ReturnType<typeof createControlPlaneRuntime>>["app"]): typeof fetch {
   return (async (input, init) => {
     const url = new URL(String(input));
+    const body = init?.body;
+    // exactOptionalPropertyTypes: omit `payload` entirely rather than passing undefined.
     const response = await app.inject({
       method: (init?.method ?? "GET") as "GET" | "POST",
       url: url.pathname + url.search,
       headers: Object.fromEntries(new Headers(init?.headers).entries()),
-      payload: init?.body === undefined ? undefined : String(init.body)
+      ...(body === undefined ? {} : { payload: String(body) })
     });
-    return new Response(response.body, { status: response.statusCode, headers: response.headers as Record<string, string> });
+    const headers = new Headers();
+    for (const [name, value] of Object.entries(response.headers)) {
+      if (value === undefined) {
+        continue;
+      }
+      for (const item of Array.isArray(value) ? value : [value]) {
+        headers.append(name, String(item));
+      }
+    }
+    return new Response(response.body, { status: response.statusCode, headers });
   }) as typeof fetch;
 }
 
