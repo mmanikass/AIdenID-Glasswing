@@ -37,6 +37,15 @@ describe("summarizeRun", () => {
     expect(summarizeRun(run({ session: null, decision: null, effect: null }))).toMatchObject({ tone: "refused", headline: "Session refused" });
     expect(summarizeRun(run({ effect: null, jev: { ...jevClear, obligation: "review_required", riskClass: "high" } }))).toMatchObject({ tone: "queued", headline: "Queued for human review" });
     expect(summarizeRun(run({ error: { code: "protected_site_unavailable", message: "down" } }))).toMatchObject({ tone: "error", headline: "Error: protected_site_unavailable" });
+    expect(summarizeRun(run({ session: null, decision: null, effect: null, jev: null, error: { code: "permission_scope_mismatch", message: "The grant does not authorize this task resource and permission." } }))).toMatchObject({
+      tone: "refused",
+      headline: "Refused before signing (permission_scope_mismatch)",
+      detail: "The grant does not authorize this task resource and permission."
+    });
+    expect(summarizeRun(run({ session: null, decision: null, effect: null, jev: null, error: { code: "session_exchange_failed", message: "The grant is no longer active or could not be exchanged." } }))).toMatchObject({
+      tone: "refused",
+      headline: "Session refused"
+    });
   });
 });
 

@@ -32,7 +32,14 @@ interface GrantWithAgent extends GlasswingGrant {
   readonly revoked: boolean;
 }
 
-const DEFAULT_PERMISSIONS = "catalog:read, items:reserve";
+/** One permission per grant: the protected site binds each grant to exactly one route. */
+const GRANT_SCOPES: readonly { readonly permission: string; readonly label: string }[] = [
+  { permission: "catalog:read", label: "catalog:read — read the catalog" },
+  { permission: "items:reserve", label: "items:reserve — reserve an item" },
+  { permission: "customers:export", label: "customers:export — export customers (policy denies this route)" },
+  { permission: "reports:bulk", label: "reports:bulk — bulk report (purpose required, Jev review)" }
+];
+const DEFAULT_PERMISSION = "catalog:read";
 
 // The dashboard compiles without the DOM lib (see LiveStream); read form values through a
 // minimal shape instead of relying on HTMLInputElement typings.
@@ -52,7 +59,7 @@ export function GlasswingConsole() {
   const [timeline, setTimeline] = useState<readonly TimelineEntry[]>([]);
   const [selectedAgent, setSelectedAgent] = useState<string>("");
   const [selectedGrant, setSelectedGrant] = useState<string>("");
-  const [permissions, setPermissions] = useState(DEFAULT_PERMISSIONS);
+  const [permission, setPermission] = useState(DEFAULT_PERMISSION);
   const [ttlMinutes, setTtlMinutes] = useState(10);
   const [task, setTask] = useState<GlasswingTask>("catalog");
   const [purpose, setPurpose] = useState("Compare prices of the three cheapest laptops for the customer.");
@@ -115,8 +122,7 @@ export function GlasswingConsole() {
   const issueGrant = () =>
     guarded("grant", async () => {
       if (!selectedAgent) throw new Error("Select an agent first.");
-      const list = permissions.split(",").map((p) => p.trim()).filter((p) => p.length > 0);
-      const body = await glasswingPost<{ grant: GlasswingGrant }>("grants", { agentId: selectedAgent, permissions: list, expiresInSeconds: Math.max(60, ttlMinutes * 60) });
+      const body = await glasswingPost<{ grant: GlasswingGrant }>("grants", { agentId: selectedAgent, permissions: [permission], expiresInSeconds: Math.max(60, ttlMinutes * 60) });
       const grant: GrantWithAgent = { ...body.grant, agentId: selectedAgent, revoked: false };
       setGrants((current) => [grant, ...current]);
       setSelectedGrant(grant.id);
@@ -212,8 +218,14 @@ export function GlasswingConsole() {
           </div>
           <div className={styles.form}>
             <label>
-              Permissions (comma separated)
-              <input value={permissions} onChange={(e) => setPermissions(inputValue(e))} />
+              Scope (one permission per grant)
+              <select value={permission} onChange={(e) => setPermission(inputValue(e))}>
+                {GRANT_SCOPES.map((scope) => (
+                  <option key={scope.permission} value={scope.permission}>
+                    {scope.label}
+                  </option>
+                ))}
+              </select>
             </label>
             <label>
               Expires in (minutes)

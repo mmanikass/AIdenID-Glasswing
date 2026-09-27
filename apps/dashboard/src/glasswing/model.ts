@@ -15,6 +15,14 @@ export interface RunOutcomeSummary {
  */
 export function summarizeRun(run: GlasswingRunResult): RunOutcomeSummary {
   if (run.error !== undefined) {
+    // Two refusals the site reports as errors because no decision exists yet: the grant did
+    // not cover the task (nothing was signed), or the control plane refused to mint a session.
+    if (run.error.code === "permission_scope_mismatch") {
+      return { tone: "refused", headline: "Refused before signing (permission_scope_mismatch)", detail: run.error.message };
+    }
+    if (run.error.code === "session_exchange_failed") {
+      return { tone: "refused", headline: "Session refused", detail: run.error.message };
+    }
     return { tone: "error", headline: `Error: ${run.error.code}`, detail: run.error.message };
   }
   if (run.session === null) {
