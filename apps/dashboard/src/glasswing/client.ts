@@ -67,12 +67,34 @@ async function parse<T>(response: Response): Promise<T> {
   return body as T;
 }
 
+export interface GlasswingSessionOutcome {
+  readonly state: "ready" | "login_required" | "unavailable";
+  /** Operator-facing diagnosis for the unavailable state. */
+  readonly detail?: string | undefined;
+}
+
+/**
+ * Classify the dev session route response. Two different 403 codes exist: login_required
+ * (login is on, SSO owns the cookie) and dev_session_disabled (the dashboard was started
+ * without the launcher flag). Only the first one is a login problem.
+ */
+export function glasswingSessionOutcome(status: number, body: unknown): GlasswingSessionOutcome {
+  if (status === 204) return { state: "ready" };
+  const error = glasswingErrorFromBody(status, body);
+  if (error.code === "login_required") return { state: "login_required" };
+  if (error.code === "dev_session_disabled") {
+    return {
+      state: "unavailable",
+      detail: "dev_session_disabled: the dashboard was started without AIDENID_DASHBOARD_DEV_SESSION=true (pnpm dev sets it; never enable it on a network-exposed dashboard)."
+    };
+  }
+  return { state: "unavailable", detail: error.message };
+}
+
 /** Obtain the dashboard operator cookie in the local-dev profile (no-op when login is on). */
-export async function ensureGlasswingSession(): Promise<"ready" | "login_required" | "unavailable"> {
+export async function ensureGlasswingSession(): Promise<GlasswingSessionOutcome> {
   const response = await fetchWithDashboardMutationTimeout("/api/glasswing/session", { method: "POST", credentials: "same-origin" });
-  if (response.status === 204) return "ready";
-  if (response.status === 403) return "login_required";
-  return "unavailable";
+  return glasswingSessionOutcome(response.status, response.status === 204 ? null : await readJson(response));
 }
 
 export async function glasswingGet<T>(path: string): Promise<T> {
