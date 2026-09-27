@@ -19,7 +19,6 @@ The following source suites reference assets intentionally omitted from the star
 
 | Test file | Omitted dependency |
 | --- | --- |
-| `apps/control-plane/tests/route-authorization.test.ts` | DD route-authorization artifact; contract is relocated by PR #5. |
 | `packages/transparency/tests/dashboard-deploy-summary.test.ts` | `scripts/verify-dashboard-deploy-summary.mjs`. |
 | `packages/transparency/tests/dashboard-live-canary.test.ts` | `scripts/check-dashboard-live.mjs`. |
 | `packages/transparency/tests/evidence-pack.test.ts` | DD evidence pack files and supporting scripts. |

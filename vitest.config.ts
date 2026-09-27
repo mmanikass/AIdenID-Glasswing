@@ -6,8 +6,6 @@ export default defineConfig({
     // artifacts intentionally omitted from the customer starter subset.
     exclude: [
       ...configDefaults.exclude,
-      // Reads a DD route-authorization artifact; PR #5 relocates the contract.
-      "apps/control-plane/tests/route-authorization.test.ts",
       // Requires scripts/verify-dashboard-deploy-summary.mjs.
       "packages/transparency/tests/dashboard-deploy-summary.test.ts",
       // Spawns scripts/check-dashboard-live.mjs.
