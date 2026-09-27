@@ -1,3 +1,5 @@
+import { createPrivateKey, createPublicKey, generateKeyPairSync, type KeyObject } from "node:crypto";
+
 import {
   InMemoryOutboxStore,
   RedisStreamsOutboxPublisher,
@@ -32,6 +34,7 @@ import type {
   DecisionReceiptIssuer,
   KillSwitchController,
   PersonaAuditController,
+  SessionSigner,
   WebhookSecretResolver
 } from "./types.js";
 
@@ -57,6 +60,61 @@ export interface CreateControlPlaneOptions {
   readonly outboxRedisStreamName?: string | undefined;
   readonly issuer?: string | undefined;
   readonly sessionTtlSeconds?: number | undefined;
+  /**
+   * Session-token signing key. Precedence: this option, then the
+   * AIDENID_CONTROL_PLANE_SESSION_SIGNING_JWK environment variable (a private Ed25519 JWK
+   * as JSON, `kid` inside it), then a fresh per-process key. A per-process key means every
+   * restart invalidates outstanding sessions and no other process can verify them; fine for
+   * an explicit local/demo run, never for a deployment.
+   */
+  readonly sessionSigningKey?: { readonly kid: string; readonly privateKey: KeyObject } | undefined;
+}
+
+const DEFAULT_SESSION_KEY_ID = "cpk_local_ed25519";
+const SESSION_SIGNING_JWK_ENV = "AIDENID_CONTROL_PLANE_SESSION_SIGNING_JWK";
+
+function publicJwkOf(privateKey: KeyObject): Readonly<Record<string, unknown>> {
+  const exported = createPublicKey(privateKey).export({ format: "jwk" }) as Record<string, unknown>;
+  if (exported.kty !== "OKP" || exported.crv !== "Ed25519") {
+    throw new Error("session signing key must be an Ed25519 (OKP) key");
+  }
+  return { kty: exported.kty, crv: exported.crv, x: exported.x };
+}
+
+function sessionSignerFromEnvironment(raw: string | undefined): SessionSigner | undefined {
+  if (raw === undefined || raw.trim().length === 0) {
+    return undefined;
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error(`${SESSION_SIGNING_JWK_ENV} must be a JSON private JWK`);
+  }
+  if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error(`${SESSION_SIGNING_JWK_ENV} must be a JSON private JWK`);
+  }
+  const jwk = parsed as Record<string, unknown>;
+  const kid = typeof jwk.kid === "string" && jwk.kid.trim().length > 0 ? jwk.kid.trim() : undefined;
+  if (kid === undefined) {
+    throw new Error(`${SESSION_SIGNING_JWK_ENV} must carry a non-empty kid`);
+  }
+  const { kid: _kid, ...keyMaterial } = jwk;
+  const privateKey = createPrivateKey({ key: keyMaterial, format: "jwk" } as never);
+  return { kid, alg: "EdDSA", privateKey, publicJwk: publicJwkOf(privateKey) };
+}
+
+export function sessionSignerFromOptions(options: CreateControlPlaneOptions, env: NodeJS.ProcessEnv = process.env): SessionSigner {
+  if (options.sessionSigningKey !== undefined) {
+    const { kid, privateKey } = options.sessionSigningKey;
+    return { kid, alg: "EdDSA", privateKey, publicJwk: publicJwkOf(privateKey) };
+  }
+  const fromEnv = sessionSignerFromEnvironment(env[SESSION_SIGNING_JWK_ENV]);
+  if (fromEnv !== undefined) {
+    return fromEnv;
+  }
+  const { privateKey } = generateKeyPairSync("ed25519");
+  return { kid: DEFAULT_SESSION_KEY_ID, alg: "EdDSA", privateKey, publicJwk: publicJwkOf(privateKey) };
 }
 
 async function createDefaultStore(app: FastifyInstance, options: CreateControlPlaneOptions): Promise<ControlPlaneStore> {
@@ -286,7 +344,8 @@ export async function createControlPlaneRuntime(options: CreateControlPlaneOptio
         allowActiveKeyRotation: booleanEnv(process.env, "AIDENID_DECISION_RECEIPT_ALLOW_ACTIVE_KEY_ROTATION", false)
       }),
     issuer,
-    sessionTtlSeconds: options.sessionTtlSeconds ?? 90
+    sessionTtlSeconds: options.sessionTtlSeconds ?? 90,
+    sessionSigner: sessionSignerFromOptions(options)
   };
   startDecisionOutboxRetention(app, services.store, options);
 

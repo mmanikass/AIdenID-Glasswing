@@ -1,4 +1,4 @@
-import { createHash, generateKeyPairSync } from "node:crypto";
+import { createHash } from "node:crypto";
 
 import { SessionExchangeRequestSchema, SessionExchangeResponseSchema } from "@aidenid/common-schemas";
 import { signCompactJws } from "@aidenid/crypto";
@@ -8,8 +8,7 @@ import type { FastifyInstance } from "fastify";
 import { prefixedId } from "../ids.js";
 import type { ControlPlaneServices, GrantRecord } from "../types.js";
 
-const { privateKey: defaultPrivateKey } = generateKeyPairSync("ed25519");
-const CONTROL_PLANE_KEY_ID = "cpk_local_ed25519";
+export const SESSION_JWKS_PATH = "/.well-known/aidenid-session-jwks.json";
 
 function tokenHash(token: string): string {
   return createHash("sha256").update(token).digest("hex");
@@ -21,6 +20,13 @@ function requestedPermissionsAllowed(grant: GrantRecord, requested: readonly str
 }
 
 export async function registerSessionRoutes(app: FastifyInstance, services: ControlPlaneServices): Promise<void> {
+  // Public: the verification key for session tokens this issuer mints. A verifier (in
+  // another process or at the edge) loads it into sessionTokenPublicJwksByIssuer[issuer].
+  app.get(SESSION_JWKS_PATH, async () => ({
+    issuer: services.issuer,
+    keys: [{ ...services.sessionSigner.publicJwk, kid: services.sessionSigner.kid, use: "sig", alg: services.sessionSigner.alg }]
+  }));
+
   app.post("/v1/sessions/exchange", async (request, reply) => {
     const parsed = SessionExchangeRequestSchema.safeParse(request.body);
     if (!parsed.success) {
@@ -69,7 +75,9 @@ export async function registerSessionRoutes(app: FastifyInstance, services: Cont
       nbf: nowSeconds,
       exp: expiresAtSeconds
     };
-    const accessToken = signCompactJws(claims, defaultPrivateKey, "EdDSA", { kid: CONTROL_PLANE_KEY_ID });
+    const accessToken = signCompactJws(claims, services.sessionSigner.privateKey, services.sessionSigner.alg, {
+      kid: services.sessionSigner.kid
+    });
     const session = await services.store.createSession({
       grantId: grant.id,
       chainId: grant.chainId,

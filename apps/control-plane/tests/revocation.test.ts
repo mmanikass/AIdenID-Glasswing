@@ -1,5 +1,6 @@
 import { InMemoryOutboxStore, StoreBackedOutboxPublisher } from "@aidenid/eventing";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { sessionSignerFromOptions } from "../src/app.js";
 
 import { InMemoryKillSwitchController } from "../src/services/killSwitch.js";
 import { LocalDecisionReceiptIssuer } from "../src/services/decisionReceipts.js";
@@ -39,7 +40,8 @@ function buildServices(): { services: ControlPlaneServices; outboxStore: InMemor
     webhookSecrets: new EnvironmentWebhookSecretResolver(),
     decisionReceipts: new LocalDecisionReceiptIssuer({ issuer: "https://test.aidenid.local" }),
     issuer: "https://test.aidenid.local",
-    sessionTtlSeconds: 60
+    sessionTtlSeconds: 60,
+    sessionSigner: sessionSignerFromOptions({})
   };
   return { services, outboxStore, chainId: grant.chainId };
 }

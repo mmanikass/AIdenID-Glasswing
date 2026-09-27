@@ -56,7 +56,7 @@ interface RouteProbe {
 
 const auditArtifactPath = fileURLToPath(
   new URL(
-    "../../../docs/dd/artifacts/control-plane-route-authorization-2026-07-14.json",
+    "./fixtures/route-authorization-contract.json",
     import.meta.url,
   ),
 );
@@ -322,7 +322,7 @@ describe.sequential("control-plane route authorization contract", () => {
     vi.unstubAllEnvs();
   });
 
-  it("matches the machine-readable 49-route contract exactly", () => {
+  it("matches the machine-readable 50-route contract exactly", () => {
     const expected = [
       ...auditArtifact.public_routes,
       ...auditArtifact.protected_routes,
@@ -340,11 +340,11 @@ describe.sequential("control-plane route authorization contract", () => {
     expect(auditArtifact.schema_version).toBe(
       "aidenid.control-plane-route-authorization-audit.v2",
     );
-    expect(auditArtifact.route_registration_count).toBe(49);
-    expect(auditArtifact.public_route_count).toBe(6);
+    expect(auditArtifact.route_registration_count).toBe(50);
+    expect(auditArtifact.public_route_count).toBe(7);
     expect(auditArtifact.protected_route_count).toBe(43);
-    expect(ROUTE_ACCESS_MANIFEST).toHaveLength(49);
-    expect(new Set(actual.map(({ key }) => key)).size).toBe(49);
+    expect(ROUTE_ACCESS_MANIFEST).toHaveLength(50);
+    expect(new Set(actual.map(({ key }) => key)).size).toBe(50);
     expect(actual).toEqual(expected);
     expect(
       PROTECTED_ROUTE_PROBES.map(

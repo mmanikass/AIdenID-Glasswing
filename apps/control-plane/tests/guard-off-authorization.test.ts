@@ -41,6 +41,7 @@ const INTENTIONALLY_PUBLIC = new Set([
   "GET /.well-known/oauth-protected-resource",
   "GET /v1/mcp/protected-resource-metadata",
   "GET /v1/mcp/front-door/roadmap",
+  "GET /.well-known/aidenid-session-jwks.json", // session-token verification key, public by design (2026-09-27)
 ]);
 
 /**
