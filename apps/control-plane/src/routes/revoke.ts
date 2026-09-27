@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { requireOperatorRole } from "../plugins/operatorAuth.js";
+import { operatorCanAccessSite, requireOperatorRole } from "../plugins/operatorAuth.js";
 import { revokeChain } from "../services/revocation.js";
 import type { ControlPlaneServices } from "../types.js";
 
@@ -29,6 +29,12 @@ export async function registerRevokeRoutes(app: FastifyInstance, services: Contr
     // off, and a body-supplied actor let that evidence name anyone.
     if (parsed.data.actor_id !== operator.actorId) {
       return reply.code(400).send({ error: "actor_id_mismatch", expected_actor_id: operator.actorId });
+    }
+    if (operator.sites !== undefined) {
+      const grant = await services.store.getGrantByChainId(parsed.data.chain_id);
+      if (grant === undefined || !operatorCanAccessSite(operator, grant.siteId)) {
+        return reply.code(403).send({ error: "operator_forbidden" });
+      }
     }
     const revocation = await revokeChain(services, {
       chainId: parsed.data.chain_id,
