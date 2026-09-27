@@ -832,11 +832,18 @@ export async function createProtectedSiteRuntime(options: ProtectedSiteOptions =
             reasonCodes: decisionRecord.reasonCodes ?? [],
             actorClass: decisionRecord.actorClass
           };
+      // When the verifier allowed the request but the handler refused (effect gate or shop
+      // state), the handler's error code is the reason the operator needs to see, not the
+      // policy reason that let the request through.
+      const handlerError = bodyRecord(responseValue)?.error;
+      const handlerReason = typeof handlerError === "string" ? handlerError : `http_${response.status}`;
       const effect = decisionRecord?.decision === "queue"
         ? null
         : decisionRecord?.decision === "allow" && response.ok
           ? { ok: true, ...(responseValue === undefined ? {} : { value: responseValue }) }
-          : { ok: false, reason: decisionRecord?.reasonCodes?.[0] ?? `http_${response.status}` };
+          : decisionRecord?.decision === "allow"
+            ? { ok: false, reason: handlerReason }
+            : { ok: false, reason: decisionRecord?.reasonCodes?.[0] ?? handlerReason };
 
       return {
         request: requestSummary,

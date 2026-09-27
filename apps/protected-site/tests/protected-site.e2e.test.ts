@@ -144,6 +144,16 @@ describe("protected-site verifier integration", () => {
       decision: { action: "allow", actorClass: "verified_agent" },
       effect: { ok: true, value: { item_id: "demo-item", status: "reserved" } }
     });
+    // The verifier allows the second reserve; the shop refuses it, and the operator sees the
+    // shop's reason rather than the policy reason that let the request through.
+    const reserveAgain = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: reserveGrant.id, task: "reserve" })
+    });
+    expect(reserveAgain.statusCode).toBe(200);
+    expect(reserveAgain.json()).toMatchObject({ decision: { action: "allow" }, effect: { ok: false, reason: "item_already_reserved" } });
 
     const missingExportPermission = await runtime.app.inject({
       method: "POST",
