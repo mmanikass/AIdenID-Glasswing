@@ -70,3 +70,18 @@ Status for the kernel packages (policy-engine, crypto, control-plane, verifier-n
 - Hosted GitHub Actions are unavailable on this account (billing), so all gates above are local runs; none is a CI-green claim.
 - The manual flow did not exercise verifier traffic (no protected route in that harness); the demo flow covers the verifier path.
 - Postgres and Redis adapters were not exercised.
+
+## Kernel PRs (Navigator)
+
+Weekend changes on top of the prior-work commit, in the order they were opened. Every test count is a local run on the workstation named above; hosted CI is blocked by GitHub billing on this account, so none of these is a CI-green claim.
+
+| PR | Branch | Head | Change | Local tests |
+|---|---|---|---|---|
+| #1 | `roadmap/pr-02a-revocation-terminal` | `4853b29` | F-01/F-02: `revokeChain` marks the grant revoked before any outbox publish (a bus failure leaves the chain revoked). New `withChainAuthority(services, { chainId, tokenRevocationEpoch }, effect)` is the co-located effect gate on the same per-chain lease `revokeChain` holds; the in-memory lease waits, bounded to 2 s, then fails closed as `chain_busy`. `checkChainAuthority` remains a read-only snapshot. | `revocation-boundary` + `revocation-terminal`; 80 tests across the control-plane suites |
+| #3 | `roadmap/pr-02b-jev` | `ce569ef` | `@aidenid/jev`: `assess()` with `verificationStatus` ∈ evaluated / unavailable / inconclusive / not_evaluated and obligation ∈ none / review_required; `composeWithJev()` (deny never changes; allow + review shows as `queue`, not dispatch-eligible); `createAnthropicJevProvider()` via the official SDK with structured output, default model `claude-opus-5` at low effort, `JEV_MODEL` override, returns `undefined` without `ANTHROPIC_API_KEY` so the UI shows unavailable. | 11 tests, including prompt-injection-cannot-widen-scope, timeout, malformed output, cache binding |
+| #4 | `roadmap/pr-02c-agent-client` | `4f3e962` | `@aidenid/agent-client`: `mintAgentKey` (Ed25519), `exchangeSession`, `buildSignedHeaders` (DPoP proof + RFC 9421 signature), `signedFetch`. | 6 tests, including a round trip through `verifyCryptoPath` |
+| #5 | `roadmap/pr-02d-session-signer` | `6ac2bea` | Control-plane session signer is injectable (`sessionSigningKey` option, or env `AIDENID_CONTROL_PLANE_SESSION_SIGNING_JWK` = private Ed25519 JWK JSON with `kid`, else a per-process key for local/demo only) and publishes `GET /.well-known/aidenid-session-jwks.json`. Route contract relocated to `apps/control-plane/tests/fixtures` (50 routes, 7 public). | 111 control-plane tests pass |
+| #6 (draft) | `roadmap/pr-02e-kernel-e2e` | `ee00f77` | `kernel-e2e.test.ts`: grant → `exchangeSession` → signed request verified against the published JWKS → effect under `withChainAuthority` → `revokeChain` → effect refused (`grant_revoked`) and re-exchange refused (403 `grant_not_active`); a verifier with its epoch floor raised refuses the old token. | 1 test, passes in-process |
+| PR-1a (pending push) | `roadmap/pr-01a-workspace-prune` | — | Prunes `lab/*` and root scripts, regenerates the lockfile, adds `docs/api/openapi.json` and one benchmark artifact byte-identical from `0e4553e`, removes the deploy-summary test that spawns an excluded script. After it, `CI=true pnpm install --frozen-lockfile` succeeds. | install gate (local) |
+
+Navigator-authored PRs (#1 and the docs PR #2) require review by the non-author under the recorded role change; the Driver's PRs are reviewed by the Navigator at their exact head SHA.
