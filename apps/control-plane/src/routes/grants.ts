@@ -3,7 +3,7 @@ import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
 import { prefixedId } from "../ids.js";
-import { requireOperatorRole } from "../plugins/operatorAuth.js";
+import { operatorCanAccessSite, requireOperatorRole } from "../plugins/operatorAuth.js";
 import type { ControlPlaneServices } from "../types.js";
 
 const CreateGrantRequestSchema = z
@@ -31,6 +31,9 @@ export async function registerGrantRoutes(app: FastifyInstance, services: Contro
     const target = await services.store.getTarget(parsed.data.target_id);
     if (target === undefined) {
       return reply.code(404).send({ error: "target_not_found" });
+    }
+    if (!operatorCanAccessSite(operator, target.siteId)) {
+      return reply.code(403).send({ error: "operator_forbidden" });
     }
     const expiresAt = new Date(Date.now() + parsed.data.expires_in_seconds * 1000).toISOString();
     const grant = await services.store.createGrant({

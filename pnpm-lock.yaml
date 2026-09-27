@@ -104,6 +104,34 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
 
+  apps/protected-site:
+    dependencies:
+      '@aidenid/agent-client':
+        specifier: workspace:*
+        version: link:../../packages/agent-client
+      '@aidenid/control-plane':
+        specifier: workspace:*
+        version: link:../control-plane
+      '@aidenid/crypto':
+        specifier: workspace:*
+        version: link:../../packages/crypto
+      '@aidenid/jev':
+        specifier: workspace:*
+        version: link:../../packages/jev
+      '@aidenid/policy-engine':
+        specifier: workspace:*
+        version: link:../../packages/policy-engine
+      '@aidenid/verifier-node':
+        specifier: workspace:*
+        version: link:../../packages/verifier-node
+      fastify:
+        specifier: ^5.8.5
+        version: 5.8.5
+    devDependencies:
+      '@types/node':
+        specifier: ^24.10.1
+        version: 24.12.2
+
   packages/agent-client:
     dependencies:
       '@aidenid/crypto':

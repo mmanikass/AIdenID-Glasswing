@@ -15,6 +15,8 @@ export type PrincipalKind = "operator" | "service";
 export interface OperatorAuthContext {
   readonly actorId: string;
   readonly roles: readonly OperatorRole[];
+  /** Site IDs this operator may administer. Absent means the legacy/unrestricted scope. */
+  readonly sites?: readonly string[] | undefined;
   /** Principal class of the caller. Absent/undefined is treated as "operator" (tokens predating the service-principal registry). */
   readonly principalKind?: PrincipalKind | undefined;
   /** Service roles held when principalKind === "service"; empty/absent for operators. */
@@ -25,6 +27,8 @@ export interface OperatorAuthTokenEntry {
   readonly actorId: string;
   readonly token: string;
   readonly roles?: readonly OperatorRole[] | undefined;
+  /** Optional site scope for operator principals. Omitted preserves legacy unrestricted behavior. */
+  readonly sites?: readonly string[] | undefined;
   readonly principalKind?: PrincipalKind | undefined;
   readonly serviceRoles?: readonly ServiceRole[] | undefined;
 }
@@ -124,6 +128,29 @@ function role(value: unknown): OperatorRole {
   throw new Error(`unsupported operator role: ${String(value)}`);
 }
 
+function siteScope(value: unknown): readonly string[] | undefined {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new Error("operator site scope must be a non-empty array");
+  }
+  const normalized = value.map((entry) => {
+    if (typeof entry !== "string") {
+      throw new Error("operator site scope entries must be strings");
+    }
+    const siteId = entry.trim();
+    if (!/^sit_[A-Za-z0-9_-]+$/.test(siteId)) {
+      throw new Error(`operator site scope contains an invalid site id: ${siteId}`);
+    }
+    return siteId;
+  });
+  if (new Set(normalized).size !== normalized.length) {
+    throw new Error("operator site scope contains duplicate site ids");
+  }
+  return normalized;
+}
+
 function roles(value: unknown): readonly OperatorRole[] {
   if (value === undefined) {
     return DEFAULT_ROLES;
@@ -164,6 +191,7 @@ function token(value: unknown): string {
  */
 function parseEntryAuthority(record: Readonly<Record<string, unknown>>): {
   readonly roles?: readonly OperatorRole[] | undefined;
+  readonly sites?: readonly string[] | undefined;
   readonly principalKind?: PrincipalKind | undefined;
   readonly serviceRoles?: readonly ServiceRole[] | undefined;
 } {
@@ -171,6 +199,7 @@ function parseEntryAuthority(record: Readonly<Record<string, unknown>>): {
   const serviceRoleValue = record.service_roles ?? record.serviceRoles;
   return {
     roles: record.roles === undefined ? undefined : roles(record.roles),
+    sites: siteScope(record.sites),
     principalKind: kindValue === undefined ? undefined : parsePrincipalKind(kindValue),
     serviceRoles: serviceRoleValue === undefined ? undefined : serviceRolesFromUnknown(serviceRoleValue)
   };
@@ -239,7 +268,7 @@ function applyServicePrincipalOverrides(
     if (override === undefined) {
       return entry;
     }
-    if (entry.principalKind !== undefined || entry.roles !== undefined || entry.serviceRoles !== undefined) {
+    if (entry.principalKind !== undefined || entry.roles !== undefined || entry.sites !== undefined || entry.serviceRoles !== undefined) {
       throw new Error(`service-principal override conflicts with explicit metadata for actor: ${entry.actorId}`);
     }
     return { ...entry, principalKind: override.principalKind, serviceRoles: override.serviceRoles };
@@ -305,15 +334,20 @@ export class OperatorTokenRegistry {
       }
       seenDigests.add(digestHex);
       const kind = parsePrincipalKind(entry.principalKind);
+      const entrySites = siteScope(entry.sites);
       const entryServiceRoles = normalizeServiceRoles(entry.serviceRoles);
       const entryOperatorRoles =
         entry.roles !== undefined ? roles(entry.roles) : kind === "operator" ? DEFAULT_ROLES : [];
       assertConsistentPrincipal(kind, entryOperatorRoles, entryServiceRoles);
+      if (kind === "service" && entrySites !== undefined) {
+        throw new Error("service principal must not carry operator site scopes");
+      }
       return {
         tokenSha256: digest,
         context: {
           actorId: actorId(entry.actorId),
           roles: entryOperatorRoles,
+          ...(entrySites === undefined ? {} : { sites: entrySites }),
           principalKind: kind,
           serviceRoles: entryServiceRoles
         }
@@ -457,4 +491,9 @@ export function requireOperatorRole(
     return undefined;
   }
   return context;
+}
+
+/** Site-scope check applied after the route has resolved the authoritative site ID. */
+export function operatorCanAccessSite(context: OperatorAuthContext, siteId: string): boolean {
+  return context.sites === undefined || context.sites.includes(siteId);
 }

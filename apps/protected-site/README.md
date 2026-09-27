@@ -1,0 +1,9 @@
+# Protected-site demo
+
+This Fastify app runs the verifier in enforce mode in front of four sample routes. It creates a scoped in-process control plane, provisions one demo target and route-specific grants, and issues a DPoP-bound session for each exact resource URL. The route-specific grants match the verifier's exact resource check while keeping each permission narrow. Unknown paths and methods are denied by an explicit catch-all policy.
+
+The demo routes are `GET /catalog`, `POST /items/demo-item/reserve`, `GET /customers/export` (denied for every actor class), and `GET /reports/bulk` (purpose allowlist plus mandatory Jev review). Decisions are synchronously recorded in the control plane before a request continues. Without an Anthropic credential or injected test provider, the mandatory Jev check remains unavailable and the reports request is queued for review.
+
+The loopback-only `/glasswing/*` API creates public agent records, creates grants for one supported route permission, runs a task server-side, revokes a chain, and lists/resolves Jev reviews. Review approval releases an in-memory report job once under the chain-authority gate. The operator token and agent/session private material never appear in browser responses. Set the same `GLASSWING_OPERATOR_TOKEN` (at least 32 random bytes) in this process and the dashboard's server-side proxy environment; never prefix it with `NEXT_PUBLIC_`.
+
+Run with `pnpm --filter @aidenid/protected-site-demo start`. The process binds the protected site on `HOST`/`PORT` (default `127.0.0.1:4100`) and its embedded control plane on `HOST`/`AIDENID_CONTROL_PLANE_PORT` (default `127.0.0.1:4000`), so the dashboard reads the same decisions, revocations, and session JWKS used by the site. Both listeners are loopback-only. State, keys, grants, replay protection, reviews, released report jobs, and the decision stream are in memory for this local demo; this package is not a production deployment template.

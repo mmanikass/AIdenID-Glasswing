@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { z } from "zod";
 
-import { requireOperatorRole } from "../plugins/operatorAuth.js";
+import { operatorCanAccessSite, requireOperatorRole } from "../plugins/operatorAuth.js";
 import type { ControlPlaneServices } from "../types.js";
 
 const CreateTargetRequestSchema = z
@@ -27,6 +27,9 @@ export async function registerTargetRoutes(app: FastifyInstance, services: Contr
     const parsed = CreateTargetRequestSchema.safeParse(request.body);
     if (!parsed.success) {
       return reply.code(400).send({ error: "invalid_target", details: parsed.error.issues });
+    }
+    if (!operatorCanAccessSite(operator, parsed.data.site_id)) {
+      return reply.code(403).send({ error: "operator_forbidden" });
     }
     const quota = await services.store.getTenantQuota(parsed.data.tenant_id);
     if (quota !== undefined && (await services.store.countTargets(parsed.data.tenant_id)) >= quota.targetLimit) {
