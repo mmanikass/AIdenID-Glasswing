@@ -62,12 +62,17 @@ Requirements: Node 22, pnpm 10 via corepack.
 
 ```bash
 corepack enable
-CI=true pnpm install --frozen-lockfile   # works once the workspace-prune commit (PR-1a) is on main
+CI=true pnpm install --frozen-lockfile
 pnpm typecheck
 pnpm test
+pnpm dev
 ```
 
-Start the control-plane in ephemeral demo mode:
+All five work on `main` as of the merged foundation (PR #7, `13e70b3`). Local evidence at that commit: frozen install, typecheck, lint and secret scan clean; vitest 50 test files / 386 tests passed.
+
+`pnpm dev` starts the control plane on http://127.0.0.1:4000 and the dashboard on http://127.0.0.1:3000, loopback only, with ephemeral state and login disabled for local development; details in `docs/aidenid-build/LOCAL_DEVELOPMENT.md`.
+
+To start the control-plane alone in ephemeral demo mode:
 
 ```bash
 pnpm --filter @aidenid/control-plane build
@@ -93,8 +98,8 @@ Keep every key in `.env`, never in this repository, chat, logs or a client bundl
 
 The first commit on `main`, `prior work` (`47a68878abbcdcdb53376a26d5f55ea6f080d928`), is a byte-identical subset of the owner's private `aidenid-clearance` repository at commit `0e4553e39e68b50aecbd977544f95d40c4e03de7` (committed 14 August 2026): nine workspace packages (`common-schemas`, `crypto`, `eventing`, `policy-engine`, `transparency`, `fingerprint-sidecar`, `verifier-node`, `control-plane`, `dashboard`) plus the root build files, 268 files in total. Every file in that commit matches its source blob hash; no git history was imported.
 
-Two more pre-weekend files were added later in the workspace-prune commit (PR-1a), byte-identical from the same source commit: `docs/api/openapi.json` and `docs/dd/artifacts/cascade-latency-2026-05-02.json`.
+Two more pre-weekend files were added later in the merged foundation (PR #7), byte-identical from the same source commit: `docs/api/openapi.json` and `docs/dd/artifacts/cascade-latency-2026-05-02.json`.
 
-Everything else after the first commit was written during Test Flight weekend (27 September 2026): the workspace prune itself, the revocation fixes and effect gate (`withChainAuthority`), `@aidenid/jev`, `@aidenid/agent-client`, the injectable session signer and JWKS route, the kernel end-to-end test, the Glasswing console, this README and the runbook.
+Everything else after the first commit was written during Test Flight weekend (27 September 2026): the foundation itself (workspace prune, local dev runbook, gates), the revocation fixes and effect gate (`withChainAuthority`), `@aidenid/jev`, `@aidenid/agent-client`, the injectable session signer and JWKS route, the kernel end-to-end test, the Glasswing console, this README and the runbook.
 
 The Senti CLI and API used by the builders to coordinate are pre-existing tools, not shipped code.
