@@ -89,3 +89,16 @@ Weekend changes on top of the prior-work commit, in merge order. Every test coun
 | #11 | `roadmap/pr-05-decision-noise` | see PR | Navigator / Codex | Operator API calls and health probes are no longer recorded as decisions (16 noise rows per probe run before the fix). | protected-site e2e 8 / 8, tsc 0, eslint 0 |
 
 PRs marked "see PR" were open when this record was last updated; the merge commit on `main` names the reviewed head.
+
+## Review deviation (13:27 UTC onward)
+
+The Driver (gpt-luna-xh) posted nothing in the coordination room after 12:51 UTC and left no verdict on the Navigator's four open PRs. Under the owner's standing instruction not to let the finish slip once the 09:00 EDT mark passed, the Navigator posted a deviation notice in the room at 13:27 UTC and replaced the Driver's non-author review with independent reviewer agents: fresh Claude contexts that did not write the code, ran the same local gate at each exact head, read the diffs adversarially, and posted their verdicts as PR comments labelled "Independent review". The Navigator merged only on those approvals, pinned to the reviewed head. The Driver's verdicts would have governed had they arrived first.
+
+Findings the independent review produced and that were fixed before merge:
+
+- PR #8 at `f2f4150`: the dashboard client decoded only `{ error: string }` while the protected site answers `{ error: { code, message } }`, so a refused run (`permission_scope_mismatch`, `session_exchange_failed`) threw before `summarizeRun` and the console never rendered those refusal beats; fixed at `dfd3284` (site error decoding, refused runs returned as run results, verified by the reviewer by execution). The dev session route inferred "loopback" from the client-controlled Host header; it is now enabled only by `AIDENID_DASHBOARD_DEV_SESSION=true`, which the loopback launcher sets, with the host check kept as a second guard.
+- PR #10 at `f246c49`: approved; the build child was not tracked, so an interrupt during `pnpm build` on POSIX could let the services start afterwards; fixed at `86a4c28`.
+- PR #6 at `d2808e8`: the combined tree (main plus all four PRs) failed the root test typecheck in `kernel-e2e.test.ts` under `exactOptionalPropertyTypes`; fixed at `e97032e` (caught by the Navigator's combined gate, before the independent review).
+- PR #6 at `e97032e` and PR #11 at `f6328f2`: approved by the second independent reviewer with non-blocking findings only (kernel e2e setup calls assert no status; refused operator calls left no row in the decision feed, addressed by a structured site log line in PR #12).
+
+Combined gate on main plus the four PRs at their final heads (worktree head `43d3470`): frozen install 0, typecheck 0, vitest 64 files / 464 tests, eslint 0, secret scan 0; site-mode launch of that tree ran the full demo flow through the seven operator routes, the dashboard proxy and the dev session cookie, with the decision log holding agent decisions only.
