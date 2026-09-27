@@ -104,6 +104,16 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
 
+  packages/agent-client:
+    dependencies:
+      '@aidenid/crypto':
+        specifier: workspace:*
+        version: link:../crypto
+    devDependencies:
+      '@aidenid/verifier-node':
+        specifier: workspace:*
+        version: link:../verifier-node
+
   packages/common-schemas:
     dependencies:
       zod:

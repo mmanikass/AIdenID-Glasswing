@@ -1,0 +1,27 @@
+{
+  "name": "@aidenid/agent-client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @aidenid/crypto build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aidenid/crypto": "workspace:*"
+  },
+  "devDependencies": {
+    "@aidenid/verifier-node": "workspace:*"
+  }
+}
