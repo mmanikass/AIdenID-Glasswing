@@ -38,7 +38,11 @@ export type ReasonCode =
   | "quarantine"
   | "operator_pinned"
   | "sandbox_policy"
-  | "operator_override";
+  | "operator_override"
+  | "semantic_review_required"
+  | "jev_unavailable"
+  | "jev_inconclusive"
+  | "epoch_stale";
 
 export type VerifierMode = "observe" | "recommend" | "enforce";
 export type CryptoPathRolloutMode = "disabled" | "shadow" | "enforce";

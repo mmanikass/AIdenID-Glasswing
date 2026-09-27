@@ -49,7 +49,11 @@ export const REASON_CODES = [
   "quarantine",
   "operator_pinned",
   "sandbox_policy",
-  "operator_override"
+  "operator_override",
+  "semantic_review_required",
+  "jev_unavailable",
+  "jev_inconclusive",
+  "epoch_stale"
 ] as const;
 
 export const ReasonCodeSchema = z.enum(REASON_CODES);
