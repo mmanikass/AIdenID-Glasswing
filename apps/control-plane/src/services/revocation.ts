@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { makeOutboxEvent } from "@aidenid/eventing";
 
 import { prefixedId } from "../ids.js";
@@ -25,11 +27,24 @@ export interface RevocationRedisClient {
   ): Promise<string | null | undefined>;
   get(key: string): Promise<string | null | undefined>;
   del(key: string): Promise<number | unknown>;
+  /**
+   * Optional Lua execution (`redis` v4 / `ioredis` shape). When present, release is an
+   * atomic compare-and-delete; without it release falls back to GET then DEL, which can
+   * delete a lease re-acquired by another holder between the two commands.
+   */
+  eval?(script: string, numKeys: number, ...args: string[]): Promise<unknown>;
 }
+
+/** Atomic "delete only if I still own it" for the Redis lease release. */
+const REDIS_COMPARE_AND_DELETE = 'if redis.call("GET", KEYS[1]) == ARGV[1] then return redis.call("DEL", KEYS[1]) else return 0 end';
 
 /**
  * Minimal Postgres client surface required for advisory-lock based leases.
- * Compatible with `pg.Pool` and `pg.Client` from the `pg` package.
+ *
+ * MUST be a single session: `pg.Client`, or a `PoolClient` checked out with `pool.connect()`
+ * and held for the whole lease. `pg_try_advisory_lock` / `pg_advisory_unlock` are
+ * session-level, so a `pg.Pool` (whose `query` may use a different connection per call)
+ * would lock on one connection and "unlock" on another. Do not pass a Pool.
  */
 export interface RevocationPgClient {
   query<T = unknown>(
@@ -43,10 +58,14 @@ export interface RevokeChainOptions {
   readonly pgClient?: RevocationPgClient | undefined;
   /** Lease TTL in milliseconds. Spec mandates ≤ 5_000ms. */
   readonly leaseTtlMs?: number | undefined;
+  /** How long an in-process lease waits for a competing holder before failing closed. Default 2_000ms. */
+  readonly leaseWaitMs?: number | undefined;
 }
 
 const MAX_LEASE_TTL_MS = 5_000;
 const DEFAULT_LEASE_TTL_MS = 5_000;
+const DEFAULT_LEASE_WAIT_MS = 2_000;
+const LEASE_POLL_MS = 5;
 
 /** In-process leases — only used as a last-resort fallback. */
 const inMemoryLeases = new Map<string, string>();
@@ -73,7 +92,12 @@ async function acquireRedisLease(
   ownerId: string,
   ttlMs: number
 ): Promise<AcquiredLease> {
-  const set = await redis.set(leaseKey, ownerId, "PX", ttlMs, "NX");
+  // Unique holder token per invocation: a retry by the same actor is a DIFFERENT holder, so a
+  // second revoke while the first one is active fails busy instead of passing through. This
+  // holds across processes, which share Redis but not the in-process lease. Request
+  // idempotency is separate (a repeated revoke keeps the first revokedAt).
+  const holder = `${ownerId}#${randomUUID()}`;
+  const set = await redis.set(leaseKey, holder, "PX", ttlMs, "NX");
   if (set) {
     return {
       mode: "redis",
@@ -81,10 +105,15 @@ async function acquireRedisLease(
       chainId,
       release: async () => {
         try {
-          // Best-effort owner check before delete to avoid releasing a lease
-          // we no longer own (e.g. after TTL expiry & re-acquisition).
+          if (typeof redis.eval === "function") {
+            // Atomic compare-and-delete: never removes a lease that expired and was
+            // re-acquired by another holder between a GET and a DEL.
+            await redis.eval(REDIS_COMPARE_AND_DELETE, 1, leaseKey, holder);
+            return;
+          }
+          // Fallback for clients without eval: best-effort owner check, NOT atomic.
           const current = await redis.get(leaseKey);
-          if (current === ownerId) {
+          if (current === holder) {
             await redis.del(leaseKey);
           }
         } catch {
@@ -93,20 +122,7 @@ async function acquireRedisLease(
       }
     };
   }
-  // Idempotent path: if the existing lease holder is the same actor.id,
-  // proper-lockfile-style semantics treat this as a benign retry.
-  const existing = await redis.get(leaseKey);
-  if (existing === ownerId) {
-    return {
-      mode: "redis",
-      key: leaseKey,
-      chainId,
-      // Do not delete — the original holder will release on completion.
-      release: async () => {
-        /* no-op: not the original lease holder */
-      }
-    };
-  }
+  // Held by someone, possibly the same actor in another process: fail busy.
   throw new Error("concurrent revocation in flight");
 }
 
@@ -174,37 +190,48 @@ async function acquirePgLease(
   throw new Error("concurrent revocation in flight");
 }
 
-function acquireMemoryLease(
+async function acquireMemoryLease(
   leaseKey: string,
   chainId: string,
-  ownerId: string
-): AcquiredLease {
-  if (!inMemoryWarningEmitted) {
+  ownerId: string,
+  waitMs: number,
+  warnIfFallback = true
+): Promise<AcquiredLease> {
+  if (warnIfFallback && !inMemoryWarningEmitted) {
     inMemoryWarningEmitted = true;
     console.warn(
       "[control-plane] revocation lease falling back to in-memory Set; " +
         "single-process lease; not safe for multi-replica deployments."
     );
   }
-  const existing = inMemoryLeases.get(leaseKey);
-  if (existing && existing !== ownerId) {
-    throw new Error("concurrent revocation in flight");
-  }
-  // Idempotent retry: same owner gets through; do not double-release.
-  const isNewHolder = !existing;
-  if (isNewHolder) {
-    inMemoryLeases.set(leaseKey, ownerId);
-  }
-  return {
-    mode: "memory",
-    key: leaseKey,
-    chainId,
-    release: async () => {
-      if (isNewHolder) {
-        inMemoryLeases.delete(leaseKey);
-      }
+  // The in-process lease is the co-located linearization point between a revocation and a
+  // protected effect on the same chain: whichever holds it first commits first and the other
+  // WAITS (bounded) instead of interleaving. When the wait is exhausted it fails closed.
+  // Mutual exclusion is strict: there is no same-owner pass-through, so two concurrent
+  // revokes by the same actor serialize instead of both running under one lease. Request
+  // idempotency is a separate concern (a repeated revoke keeps the first revokedAt).
+  const holder = `${ownerId}#${randomUUID()}`;
+  const deadline = Date.now() + Math.max(0, waitMs);
+  for (;;) {
+    const existing = inMemoryLeases.get(leaseKey);
+    if (existing === undefined) {
+      inMemoryLeases.set(leaseKey, holder);
+      return {
+        mode: "memory",
+        key: leaseKey,
+        chainId,
+        release: async () => {
+          if (inMemoryLeases.get(leaseKey) === holder) {
+            inMemoryLeases.delete(leaseKey);
+          }
+        }
+      };
     }
-  };
+    if (Date.now() >= deadline) {
+      throw new Error("concurrent revocation in flight");
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, LEASE_POLL_MS));
+  }
 }
 
 async function acquireLease(
@@ -213,27 +240,53 @@ async function acquireLease(
   ownerId: string,
   options: RevokeChainOptions | undefined
 ): Promise<AcquiredLease> {
-  const ttlMs = clampTtl(options?.leaseTtlMs);
-  if (options?.redis) {
-    return acquireRedisLease(options.redis, leaseKey, chainId, ownerId, ttlMs);
+  const waitMs = options?.leaseWaitMs ?? DEFAULT_LEASE_WAIT_MS;
+  if (!options?.redis && !options?.pgClient) {
+    return acquireMemoryLease(leaseKey, chainId, ownerId, waitMs);
   }
-  if (options?.pgClient) {
-    const lease = await acquirePgLease(options.pgClient, leaseKey, chainId, ownerId);
-    // Track owner so same-actor retries inside this process are idempotent.
-    inMemoryLeases.set(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`, ownerId);
-    const release = lease.release;
-    return {
-      ...lease,
-      release: async () => {
-        try {
-          await release();
-        } finally {
-          inMemoryLeases.delete(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`);
+  // Same-process exclusion FIRST. PostgreSQL session-level advisory locks are re-entrant for
+  // the owning session (a second pg_try_advisory_lock on the same client succeeds while a
+  // waiter exists), and Redis SET NX admits a retry by the same owner id, so two callers in
+  // this process sharing one client or one actor id would both pass the cross-replica lock.
+  // The in-process lease serializes them before that lock is even attempted; the backend
+  // lock then excludes OTHER processes. Released in reverse order.
+  const local = await acquireMemoryLease(leaseKey, chainId, ownerId, waitMs, false);
+  let backend: AcquiredLease;
+  try {
+    const ttlMs = clampTtl(options.leaseTtlMs);
+    if (options.redis) {
+      backend = await acquireRedisLease(options.redis, leaseKey, chainId, ownerId, ttlMs);
+    } else {
+      const pgClient = options.pgClient as RevocationPgClient;
+      const lease = await acquirePgLease(pgClient, leaseKey, chainId, ownerId);
+      // Track owner so same-actor retries inside this process are idempotent.
+      inMemoryLeases.set(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`, ownerId);
+      const release = lease.release;
+      backend = {
+        ...lease,
+        release: async () => {
+          try {
+            await release();
+          } finally {
+            inMemoryLeases.delete(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`);
+          }
         }
-      }
-    };
+      };
+    }
+  } catch (error) {
+    await local.release();
+    throw error;
   }
-  return acquireMemoryLease(leaseKey, chainId, ownerId);
+  return {
+    ...backend,
+    release: async () => {
+      try {
+        await backend.release();
+      } finally {
+        await local.release();
+      }
+    }
+  };
 }
 
 export async function revokeChain(
@@ -254,6 +307,18 @@ export async function revokeChain(
       },
       occurredAt
     );
+    // Revocation is terminal for the delegation itself, not only for tokens already issued.
+    // Bumping the epoch invalidates outstanding session tokens at the verifier, but
+    // /v1/sessions/exchange refuses only on grant.revokedAt, which nothing used to set: a
+    // revoked chain could mint a fresh session stamped with the new epoch immediately.
+    // Both authoritative state transitions (epoch, grant) happen BEFORE any fallible
+    // publication, so a bus failure leaves the chain revoked, never half-revoked.
+    // Idempotent: a second revoke bumps the epoch again but keeps the first revokedAt.
+    const grant = await services.store.getGrantByChainId(revocation.chainId);
+    const newlyRevoked = grant !== undefined && grant.revokedAt === undefined;
+    if (newlyRevoked) {
+      await services.store.revokeGrant(grant.id, occurredAt);
+    }
     await services.outbox.publish(
       makeOutboxEvent(prefixedId("evt"), "REVOCATION_EPOCH_BUMP", {
         chain_id: revocation.chainId,
@@ -262,7 +327,17 @@ export async function revokeChain(
         actor_id: revocation.actorId
       })
     );
-    const grant = await services.store.getGrantByChainId(revocation.chainId);
+    if (newlyRevoked) {
+      await services.outbox.publish(
+        makeOutboxEvent(prefixedId("evt"), "GRANT_REVOKED_HASH", {
+          grant_id: grant.id,
+          chain_id: revocation.chainId,
+          site_id: grant.siteId,
+          epoch: revocation.epoch,
+          actor_id: revocation.actorId
+        })
+      );
+    }
     await enqueuePersonaAudit(services, {
       triggerType: "revocation_epoch",
       siteId: grant?.siteId,
@@ -273,6 +348,111 @@ export async function revokeChain(
       occurredAt
     });
     return revocation;
+  } finally {
+    await lease.release();
+  }
+}
+
+export type ChainAuthorityStatus =
+  | { readonly current: true; readonly epoch: number }
+  | {
+      readonly current: false;
+      readonly reason: "unknown_chain" | "grant_revoked" | "grant_expired" | "epoch_stale";
+      readonly epoch: number;
+    };
+
+/**
+ * Per-chain authority SNAPSHOT: store reads only, no lock. Use it for display and for
+ * pre-checks; it is NOT the effect gate, because a revoke can land between this read and
+ * the effect. The gate is `withChainAuthority`, which takes the same per-chain lease that
+ * `revokeChain` holds.
+ *
+ * Why a per-chain check exists at all: the verifier hot path compares a session token's
+ * revocation_epoch against ONE global minimum (AIDENID_VERIFIER_MIN_REVOCATION_EPOCH /
+ * rollback.globalRevocationEpoch), so a per-chain revocation is invisible to it unless the
+ * global floor is raised for every chain.
+ */
+export async function checkChainAuthority(
+  services: Pick<ControlPlaneServices, "store">,
+  input: { readonly chainId: string; readonly tokenRevocationEpoch: number; readonly now?: Date | undefined }
+): Promise<ChainAuthorityStatus> {
+  const grant = await services.store.getGrantByChainId(input.chainId);
+  const epoch = await services.store.currentEpoch(input.chainId);
+  if (grant === undefined) {
+    return { current: false, reason: "unknown_chain", epoch };
+  }
+  if (grant.revokedAt !== undefined) {
+    return { current: false, reason: "grant_revoked", epoch };
+  }
+  const nowMs = (input.now ?? new Date()).getTime();
+  if (Date.parse(grant.expiresAt) <= nowMs) {
+    return { current: false, reason: "grant_expired", epoch };
+  }
+  if (input.tokenRevocationEpoch !== epoch) {
+    return { current: false, reason: "epoch_stale", epoch };
+  }
+  return { current: true, epoch };
+}
+
+export type ChainEffectResult<T> =
+  | { readonly ok: true; readonly epoch: number; readonly value: T }
+  | {
+      readonly ok: false;
+      readonly reason:
+        | Extract<ChainAuthorityStatus, { current: false }>["reason"]
+        | "chain_busy"
+        | "lease_backend_unsupported";
+    };
+
+/**
+ * The co-located effect boundary. Acquires the same per-chain lease `revokeChain` uses,
+ * re-reads authority under it, and runs the effect while holding it. That makes the lease
+ * the linearization point the contract requires: an effect that wins the lease commits
+ * before a concurrent revoke; a revoke that wins it makes the effect refuse before it runs.
+ * If the lease cannot be obtained within the bounded wait the effect is refused
+ * (`chain_busy`) rather than run unchecked. Nothing here touches the network or a model.
+ *
+ * Supported lease backends for the effect gate:
+ * - in-process lease (no TTL; single-process guarantee, the profile the demo ships);
+ * - Postgres session-level advisory lock (held until release). Session advisory locks are
+ *   re-entrant for the owning session, so same-process callers are serialized by the
+ *   in-process lease BEFORE the session lock is taken; sharing one pg client between the
+ *   gate and revokeChain cannot bypass exclusion, and the session lock excludes other processes.
+ * NOT supported: the Redis lease. It carries a TTL capped at 5 s with no renewal or fencing,
+ * so an effect that outlives the TTL could commit after a revoke won the re-acquired lease.
+ * Rather than advertise a guarantee it cannot keep, the gate refuses to run the effect
+ * (`lease_backend_unsupported`) when Redis lease options are supplied. `revokeChain` keeps
+ * its Redis support; only the effect gate is narrowed.
+ */
+export async function withChainAuthority<T>(
+  services: Pick<ControlPlaneServices, "store">,
+  input: {
+    readonly chainId: string;
+    readonly tokenRevocationEpoch: number;
+    readonly now?: Date | undefined;
+    /** Lease owner id; defaults to a unique id per effect so two effects never share a lease. */
+    readonly ownerId?: string | undefined;
+  },
+  effect: (authority: { readonly epoch: number }) => Promise<T> | T,
+  options?: RevokeChainOptions
+): Promise<ChainEffectResult<T>> {
+  if (options?.redis !== undefined) {
+    return { ok: false, reason: "lease_backend_unsupported" };
+  }
+  const leaseKey = `lease:revoke:${input.chainId}`;
+  let lease: AcquiredLease;
+  try {
+    lease = await acquireLease(leaseKey, input.chainId, input.ownerId ?? `effect:${randomUUID()}`, options);
+  } catch {
+    return { ok: false, reason: "chain_busy" };
+  }
+  try {
+    const status = await checkChainAuthority(services, input);
+    if (!status.current) {
+      return { ok: false, reason: status.reason };
+    }
+    const value = await effect({ epoch: status.epoch });
+    return { ok: true, epoch: status.epoch, value };
   } finally {
     await lease.release();
   }

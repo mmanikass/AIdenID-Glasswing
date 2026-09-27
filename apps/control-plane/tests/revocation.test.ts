@@ -158,7 +158,7 @@ describe("revokeChain cross-replica lease", () => {
 
       const call = setSpy.mock.calls[0]!;
       expect(call[0]).toBe(`lease:revoke:${chainId}`);
-      expect(call[1]).toBe("admin_1");
+      expect(String(call[1])).toMatch(/^admin_1#[0-9a-f-]{36}$/);
       expect(call[2]).toBe("PX");
       expect(call[3]).toBeLessThanOrEqual(5_000);
       expect(call[3]).toBeGreaterThan(0);
@@ -183,22 +183,19 @@ describe("revokeChain cross-replica lease", () => {
       ).rejects.toThrow(/concurrent revocation in flight/);
     });
 
-    it("is idempotent on retry: same actor.id passes through the existing lease", async () => {
+    it("fails busy when the lease is held, even by the same actor id in another process (per-invocation holder token)", async () => {
       const redis = new FakeRedis();
       const { services, chainId } = buildServices();
-      // Same-actor pre-seeded lease.
-      await redis.set(`lease:revoke:${chainId}`, "admin_1", "PX", 5_000, "NX");
-
-      const result = await revokeChain(
-        services,
-        { chainId, reason: "user_revoked", actorId: "admin_1" },
-        { redis }
-      );
-      expect(result.epoch).toBe(1);
-      // Original lease still present (not deleted by the idempotent passthrough).
-      expect(await redis.get(`lease:revoke:${chainId}`)).toBe("admin_1");
+      // Same-actor lease held elsewhere (another replica): no pass-through.
+      const heldElsewhere = "admin_1#11111111-1111-4111-8111-111111111111";
+      await redis.set(`lease:revoke:${chainId}`, heldElsewhere, "PX", 5_000, "NX");
+      await expect(
+        revokeChain(services, { chainId, reason: "user_revoked", actorId: "admin_1" }, { redis })
+      ).rejects.toThrow(/concurrent revocation in flight/);
+      // The other holder is untouched and no epoch moved.
+      expect(await redis.get(`lease:revoke:${chainId}`)).toBe(heldElsewhere);
+      expect(await services.store.currentEpoch(chainId)).toBe(0);
     });
-
     it("clamps a too-large lease TTL down to 5_000ms", async () => {
       const redis = new FakeRedis();
       const setSpy = vi.spyOn(redis, "set");
