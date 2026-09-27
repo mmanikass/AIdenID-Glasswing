@@ -354,6 +354,15 @@ function jsonStringHeader(request: FastifyRequest, name: string): string | undef
   return Array.isArray(value) && typeof value[0] === "string" ? value[0] : undefined;
 }
 
+/**
+ * Route templates served to operators and probes rather than agents. They pass the policy
+ * allow-all entry and are authenticated by the operator token in their handlers, so recording
+ * them would bury the agent decisions the dashboard feed exists to show.
+ */
+function isOperatorSurface(routeTemplate: string): boolean {
+  return routeTemplate === "/healthz" || routeTemplate === "/glasswing" || routeTemplate.startsWith("/glasswing/");
+}
+
 function bodyRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Readonly<Record<string, unknown>>) : undefined;
 }
@@ -586,6 +595,9 @@ export async function createProtectedSiteRuntime(options: ProtectedSiteOptions =
     });
 
     const decisionOverride = async (decision: DecisionResult): Promise<DecisionResult | undefined> => {
+      if (isOperatorSurface(decision.routeTemplate)) {
+        return decision;
+      }
       let composedDecision = decision;
       const context = requestAuthorities.get(decision.requestId);
       if (
@@ -820,11 +832,18 @@ export async function createProtectedSiteRuntime(options: ProtectedSiteOptions =
             reasonCodes: decisionRecord.reasonCodes ?? [],
             actorClass: decisionRecord.actorClass
           };
+      // When the verifier allowed the request but the handler refused (effect gate or shop
+      // state), the handler's error code is the reason the operator needs to see, not the
+      // policy reason that let the request through.
+      const handlerError = bodyRecord(responseValue)?.error;
+      const handlerReason = typeof handlerError === "string" ? handlerError : `http_${response.status}`;
       const effect = decisionRecord?.decision === "queue"
         ? null
         : decisionRecord?.decision === "allow" && response.ok
           ? { ok: true, ...(responseValue === undefined ? {} : { value: responseValue }) }
-          : { ok: false, reason: decisionRecord?.reasonCodes?.[0] ?? `http_${response.status}` };
+          : decisionRecord?.decision === "allow"
+            ? { ok: false, reason: handlerReason }
+            : { ok: false, reason: decisionRecord?.reasonCodes?.[0] ?? handlerReason };
 
       return {
         request: requestSummary,
