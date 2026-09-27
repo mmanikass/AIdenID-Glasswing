@@ -354,6 +354,15 @@ function jsonStringHeader(request: FastifyRequest, name: string): string | undef
   return Array.isArray(value) && typeof value[0] === "string" ? value[0] : undefined;
 }
 
+/**
+ * Route templates served to operators and probes rather than agents. They pass the policy
+ * allow-all entry and are authenticated by the operator token in their handlers, so recording
+ * them would bury the agent decisions the dashboard feed exists to show.
+ */
+function isOperatorSurface(routeTemplate: string): boolean {
+  return routeTemplate === "/healthz" || routeTemplate === "/glasswing" || routeTemplate.startsWith("/glasswing/");
+}
+
 function bodyRecord(value: unknown): Readonly<Record<string, unknown>> | undefined {
   return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Readonly<Record<string, unknown>>) : undefined;
 }
@@ -586,6 +595,9 @@ export async function createProtectedSiteRuntime(options: ProtectedSiteOptions =
     });
 
     const decisionOverride = async (decision: DecisionResult): Promise<DecisionResult | undefined> => {
+      if (isOperatorSurface(decision.routeTemplate)) {
+        return decision;
+      }
       let composedDecision = decision;
       const context = requestAuthorities.get(decision.requestId);
       if (

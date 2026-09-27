@@ -266,6 +266,29 @@ describe("protected-site verifier integration", () => {
     expect(decisions).toEqual(expect.arrayContaining([expect.objectContaining({ decision: "deny", reasonCodes: expect.arrayContaining(["operator_override"]) })]));
   });
 
+  it("does not record operator API calls or health probes as decisions", async () => {
+    const runtime = await createRuntime(clearJevProvider());
+    expect((await runtime.app.inject({ method: "GET", url: "/healthz" })).statusCode).toBe(200);
+    expect((await runtime.app.inject({ method: "GET", url: "/glasswing/agents", headers: operatorHeaders(runtime) })).statusCode).toBe(200);
+    expect((await runtime.app.inject({ method: "GET", url: "/glasswing/agents" })).statusCode).toBe(401);
+    expect((await runtime.app.inject({ method: "GET", url: "/glasswing/reviews", headers: operatorHeaders(runtime) })).statusCode).toBe(200);
+    expect(await runtime.controlPlane.services.store.listDecisions(runtime.siteId, 100)).toEqual([]);
+
+    // Agent traffic on a protected route is still recorded.
+    const agent = await createManagedAgent(runtime);
+    const grant = await createManagedGrant(runtime, agent.id, "catalog:read");
+    const run = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: grant.id, task: "catalog" })
+    });
+    expect(run.statusCode).toBe(200);
+    const decisions = await runtime.controlPlane.services.store.listDecisions(runtime.siteId, 100);
+    expect(decisions).toHaveLength(1);
+    expect(decisions[0]).toMatchObject({ routeTemplate: "/catalog", decision: "allow" });
+  });
+
   it("verifies signed routes, denies exports, and records Jev's composed report decision", async () => {
     const runtime = await createRuntime(clearJevProvider());
     const { key, sessions, grants } = runtime.demoAgent;
