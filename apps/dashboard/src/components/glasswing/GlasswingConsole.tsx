@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { ActorBadge } from "../ActorBadge.js";
 import { DecisionPill } from "../DecisionPill.js";
-import { ensureGlasswingSession, GlasswingApiError, glasswingGet, glasswingPost } from "../../glasswing/client.js";
+import { ensureGlasswingSession, GlasswingApiError, glasswingGet, glasswingPost, glasswingRun } from "../../glasswing/client.js";
 import { describeJev, expiryLabel, reviewStatusLabel, summarizeRun } from "../../glasswing/model.js";
 import {
   GLASSWING_TASKS,
@@ -132,7 +132,7 @@ export function GlasswingConsole() {
   const run = () =>
     guarded("run", async () => {
       if (!selectedAgent || !selectedGrant) throw new Error("Select an agent and a grant first.");
-      const result = await glasswingPost<GlasswingRunResult>(`agents/${selectedAgent}/run`, { grantId: selectedGrant, task, purpose: task === "bulk-report" ? purpose : undefined });
+      const result = await glasswingRun(selectedAgent, { grantId: selectedGrant, task, purpose: task === "bulk-report" ? purpose : undefined });
       const summary = summarizeRun(result);
       log({ kind: "run", text: `${task}: ${summary.headline}`, run: result });
       if (result.jev?.obligation === "review_required") {
@@ -160,7 +160,7 @@ export function GlasswingConsole() {
   if (session === "login_required") {
     return (
       <div className={styles.banner}>
-        Login is required on this dashboard. Sign in first; the local dev session shortcut is disabled when AIDENID_REQUIRE_LOGIN is on.
+        Login is required on this dashboard, so the local dev session used by this console is disabled. Run the loopback profile (pnpm dev) for the demo.
       </div>
     );
   }

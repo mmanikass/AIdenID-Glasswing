@@ -6,7 +6,8 @@ import { issueDevOperatorSession } from "../src/glasswing/session.js";
 const ENV = {
   AIDENID_PROTECTED_SITE_URL: "http://127.0.0.1:4100",
   AIDENID_OPERATOR_TOKEN: "upstream_operator_token_0123456789",
-  AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN: "dashboard_client_token_0123456789"
+  AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN: "dashboard_client_token_0123456789",
+  AIDENID_DASHBOARD_DEV_SESSION: "true"
 } as const;
 const CLIENT = { cookie: "aidenid_operator_token=dashboard_client_token_0123456789" };
 
@@ -73,6 +74,9 @@ describe("proxyGlasswingRequest", () => {
     expect(notJson.status).toBe(400);
     const huge = await proxyGlasswingRequest({ request: new Request("http://localhost:3000/api/glasswing/grants", { method: "POST", headers: CLIENT, body: JSON.stringify({ x: "y".repeat(20_000) }) }), segments: ["grants"], env: ENV, fetchImpl });
     expect(huge.status).toBe(413);
+    // The cap is in UTF-8 bytes, not UTF-16 units: 9k two-byte characters exceed 16 KiB.
+    const wide = await proxyGlasswingRequest({ request: new Request("http://localhost:3000/api/glasswing/grants", { method: "POST", headers: CLIENT, body: JSON.stringify({ x: "é".repeat(9_000) }) }), segments: ["grants"], env: ENV, fetchImpl });
+    expect(wide.status).toBe(413);
     expect(calls).toHaveLength(1);
   });
 
@@ -101,7 +105,11 @@ describe("issueDevOperatorSession", () => {
       cookie: { name: "aidenid_operator_token", value: ENV.AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN, secure: false, maxAgeSeconds: 8 * 60 * 60 }
     });
     expect(issueDevOperatorSession(ENV, { loginRequired: true, requestUrl: "http://127.0.0.1:3000/x" })).toEqual({ ok: false, status: 403, error: "login_required" });
-    expect(issueDevOperatorSession({}, { loginRequired: false, requestUrl: "http://127.0.0.1:3000/x" })).toEqual({ ok: false, status: 503, error: "operator_auth_not_configured" });
+    expect(issueDevOperatorSession({ AIDENID_DASHBOARD_DEV_SESSION: "true" }, { loginRequired: false, requestUrl: "http://127.0.0.1:3000/x" })).toEqual({ ok: false, status: 503, error: "operator_auth_not_configured" });
     expect(issueDevOperatorSession(ENV, { loginRequired: false, requestUrl: "http://dashboard.example.com/x" })).toEqual({ ok: false, status: 403, error: "loopback_only" });
+    // The launcher flag is the real gate: a loopback Host header alone is client-controlled.
+    const { AIDENID_DASHBOARD_DEV_SESSION: _flag, ...withoutFlag } = ENV;
+    expect(issueDevOperatorSession(withoutFlag, { loginRequired: false, requestUrl: "http://127.0.0.1:3000/x" })).toEqual({ ok: false, status: 403, error: "dev_session_disabled" });
+    expect(issueDevOperatorSession({ ...ENV, AIDENID_DASHBOARD_DEV_SESSION: "1" }, { loginRequired: false, requestUrl: "http://127.0.0.1:3000/x" })).toEqual({ ok: false, status: 403, error: "dev_session_disabled" });
   });
 });

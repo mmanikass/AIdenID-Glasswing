@@ -11,9 +11,19 @@ function provenance(): { readonly label: string; readonly className: string } {
   return { label: "No live control plane configured: this console cannot act. Start it with pnpm dev.", className: "data-provenance-banner data-provenance-sample_data" };
 }
 
+function siteOrigin(): string | undefined {
+  const raw = process.env.AIDENID_PROTECTED_SITE_URL?.trim();
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return undefined;
+  }
+}
+
 export default function GlasswingPage() {
   const banner = provenance();
-  const siteUrl = process.env.AIDENID_PROTECTED_SITE_URL?.trim();
+  const siteUrl = siteOrigin();
   return (
     <main className="dashboard-shell">
       <header className="topbar">

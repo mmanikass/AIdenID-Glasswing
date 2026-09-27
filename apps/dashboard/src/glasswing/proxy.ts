@@ -18,6 +18,7 @@ const LIVE_HEADER = {
 } as const;
 
 const ID_SEGMENT = /^[A-Za-z0-9_-]{1,128}$/;
+const MAX_BODY_BYTES = 16_384;
 
 /**
  * Allow-listed upstream routes. Anything else is refused before any network call, so the
@@ -87,8 +88,12 @@ export async function proxyGlasswingRequest(input: ProxyGlasswingInput): Promise
 
   let body: string | undefined;
   if (request.method.toUpperCase() === "POST") {
+    const declared = Number(request.headers.get("content-length") ?? "0");
+    if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+      return jsonError(413, "glasswing_body_too_large");
+    }
     body = await request.text();
-    if (body.length > 16_384) {
+    if (Buffer.byteLength(body, "utf8") > MAX_BODY_BYTES) {
       return jsonError(413, "glasswing_body_too_large");
     }
     if (body.length > 0) {
