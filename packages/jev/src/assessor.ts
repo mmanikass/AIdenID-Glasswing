@@ -10,8 +10,15 @@ const TRUNCATION_MARKER = " …[TRUNCATED]";
 // C0 control characters except tab, newline and carriage return.
 const CONTROL_CHARS = new RegExp("[" + String.fromCharCode(0) + "-" + String.fromCharCode(8) + String.fromCharCode(11) + String.fromCharCode(12) + String.fromCharCode(14) + "-" + String.fromCharCode(31) + "]", "g");
 
-/** Binds a result to tenant, grant/policy version, rubric, model and the exact action. */
+/**
+ * Binds a result to tenant, grant/policy version, rubric, model, the exact action AND the
+ * sanitized purpose text the model was shown, plus whether the check was mandatory. The
+ * purpose text is the central prompt input, so two actions with the same digest but
+ * different stated purposes must never share a verdict.
+ */
 export function jevCacheKey(input: JevAssessmentInput, modelVersion: string | null): string {
+  const purpose = sanitizePurpose(input.purposeText, input.rubric.maxPurposeChars);
+  const purposeDigest = createHash("sha256").update(purpose.text, "utf8").digest("hex");
   const material = JSON.stringify([
     input.scope.tenantId,
     input.scope.siteId,
@@ -20,7 +27,9 @@ export function jevCacheKey(input: JevAssessmentInput, modelVersion: string | nu
     input.rubric.id,
     input.rubric.version,
     modelVersion ?? "none",
-    input.actionDigest
+    input.actionDigest,
+    purposeDigest,
+    input.mandatory
   ]);
   return createHash("sha256").update(material, "utf8").digest("hex");
 }
@@ -77,9 +86,17 @@ export function buildUserPrompt(input: JevAssessmentInput): { readonly user: str
   return { user, truncated: purpose.truncated };
 }
 
-function obligationFor(status: JevAssessment["verificationStatus"], riskClass: JevAssessment["riskClass"], confidence: number | null, input: JevAssessmentInput): JevObligation {
+function obligationFor(
+  status: JevAssessment["verificationStatus"],
+  riskClass: JevAssessment["riskClass"],
+  confidence: number | null,
+  coverage: JevAssessment["evidenceCoverage"],
+  input: JevAssessmentInput
+): JevObligation {
   if (status === "evaluated") {
-    if (riskClass === "low" && confidence !== null && confidence >= input.rubric.minConfidenceForClear) {
+    // A clear result needs low risk, enough confidence AND some evidence behind it. An
+    // answer that records no evidence coverage cannot clear an action however confident.
+    if (riskClass === "low" && confidence !== null && confidence >= input.rubric.minConfidenceForClear && coverage !== "none") {
       return "none";
     }
     return "review_required";
@@ -161,7 +178,7 @@ export async function assess(input: JevAssessmentInput, options: JevOptions = {}
       modelConfidence: null,
       evidenceCoverage: "none",
       rationale: null,
-      obligation: obligationFor("unavailable", null, null, input),
+      obligation: obligationFor("unavailable", null, null, "none", input),
       unavailableReason: "no_provider",
       purposeTruncated: truncated
     });
@@ -175,7 +192,7 @@ export async function assess(input: JevAssessmentInput, options: JevOptions = {}
       modelConfidence: null,
       evidenceCoverage: "none",
       rationale: null,
-      obligation: obligationFor(outcome.status, null, null, input),
+      obligation: obligationFor(outcome.status, null, null, "none", input),
       unavailableReason: outcome.reason,
       purposeTruncated: truncated
     });
@@ -189,7 +206,7 @@ export async function assess(input: JevAssessmentInput, options: JevOptions = {}
       modelConfidence: null,
       evidenceCoverage: "none",
       rationale: null,
-      obligation: obligationFor("inconclusive", null, null, input),
+      obligation: obligationFor("inconclusive", null, null, "none", input),
       unavailableReason: "malformed_output",
       purposeTruncated: truncated
     });
@@ -201,7 +218,7 @@ export async function assess(input: JevAssessmentInput, options: JevOptions = {}
     modelConfidence: parsed.data.confidence,
     evidenceCoverage: parsed.data.evidence_coverage,
     rationale: parsed.data.rationale,
-    obligation: obligationFor("evaluated", parsed.data.risk_class, parsed.data.confidence, input),
+    obligation: obligationFor("evaluated", parsed.data.risk_class, parsed.data.confidence, parsed.data.evidence_coverage, input),
     unavailableReason: null,
     purposeTruncated: truncated
   });

@@ -199,3 +199,29 @@ describe("composeWithJev", () => {
     }
   });
 });
+
+describe("review round 2: cache binding and evidence coverage", () => {
+  it("never shares a verdict between the same action with different purpose texts", async () => {
+    const provider = new FakeProvider({ output: LOW });
+    const cache = new Map();
+    const first = await assess(input({ purposeText: "Compare prices of three laptops for the customer." }), { provider, cache });
+    const second = await assess(input({ purposeText: "export all customer records" }), { provider, cache });
+    expect(provider.requests).toHaveLength(2);
+    expect(second.fromCache).toBe(false);
+    expect(second.cacheKey).not.toBe(first.cacheKey);
+    // Same purpose again is a cache hit; a mandatory/optional flip is not.
+    const third = await assess(input({ purposeText: "export all customer records" }), { provider, cache });
+    expect(third.fromCache).toBe(true);
+    const optional = await assess(input({ purposeText: "export all customer records", mandatory: false }), { provider, cache });
+    expect(optional.fromCache).toBe(false);
+    expect(provider.requests).toHaveLength(3);
+  });
+
+  it("does not clear a low-risk answer that reports no evidence coverage", async () => {
+    const result = await assess(input(), { provider: new FakeProvider({ output: { ...LOW, evidence_coverage: "none" } }) });
+    expect(result).toMatchObject({ verificationStatus: "evaluated", riskClass: "low", evidenceCoverage: "none", obligation: "review_required" });
+    expect(composeWithJev({ action: "allow", reasonCodes: [] }, result)).toMatchObject({ action: "queue", dispatchEligible: false, obligations: ["review_required"] });
+    const partial = await assess(input(), { provider: new FakeProvider({ output: { ...LOW, evidence_coverage: "partial" } }) });
+    expect(partial.obligation).toBe("none");
+  });
+});
