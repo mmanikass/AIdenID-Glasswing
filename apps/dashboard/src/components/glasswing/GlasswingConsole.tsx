@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { ActorBadge } from "../ActorBadge.js";
 import { DecisionPill } from "../DecisionPill.js";
 import { ensureGlasswingSession, GlasswingApiError, glasswingGet, glasswingPost, glasswingRun } from "../../glasswing/client.js";
-import { describeJev, expiryLabel, reviewStatusLabel, summarizeRun } from "../../glasswing/model.js";
+import { describeJev, expiryLabel, reviewDecisionLogText, reviewStatusLabel, summarizeRun } from "../../glasswing/model.js";
 import {
   GLASSWING_TASKS,
   type GlasswingAgent,
@@ -154,7 +154,7 @@ export function GlasswingConsole() {
     guarded("review", async () => {
       const body = await glasswingPost<{ review: GlasswingReview }>(`reviews/${review.id}`, { decision });
       setReviews((current) => current.map((r) => (r.id === review.id ? body.review : r)));
-      log({ kind: "review", text: `Review ${review.id} ${decision === "approve" ? "approved: queued effect released once" : "denied: recorded as a deny decision"}` });
+      log({ kind: "review", text: reviewDecisionLogText(decision, body.review) });
     });
 
   if (session === "checking") {
