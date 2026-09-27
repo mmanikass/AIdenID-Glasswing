@@ -84,7 +84,7 @@ export function reviewDecisionLogText(
   }
   if (review.status === "denied") {
     return requested === "approve"
-      ? `Review ${review.id}: approval refused, the chain no longer has authority; nothing was released and a deny decision was recorded`
+      ? `Review ${review.id}: approval refused by the chain-authority gate; nothing was released and a deny decision was recorded`
       : `Review ${review.id} denied: recorded as a deny decision`;
   }
   return `Review ${review.id} is still awaiting an operator`;

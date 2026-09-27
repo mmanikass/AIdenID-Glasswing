@@ -61,7 +61,7 @@ describe("reviewDecisionLogText", () => {
   it("reports what the server did, so an approval refused after a revoke never reads as a release", () => {
     expect(reviewDecisionLogText("approve", { id: "rev_1", status: "approved" })).toBe("Review rev_1 approved: queued effect released once");
     expect(reviewDecisionLogText("approve", { id: "rev_1", status: "denied" })).toBe(
-      "Review rev_1: approval refused, the chain no longer has authority; nothing was released and a deny decision was recorded"
+      "Review rev_1: approval refused by the chain-authority gate; nothing was released and a deny decision was recorded"
     );
     expect(reviewDecisionLogText("deny", { id: "rev_1", status: "denied" })).toBe("Review rev_1 denied: recorded as a deny decision");
     expect(reviewDecisionLogText("approve", { id: "rev_1", status: "pending" })).toBe("Review rev_1 is still awaiting an operator");
