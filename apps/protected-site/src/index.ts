@@ -431,6 +431,13 @@ function requireOperator(request: FastifyRequest, reply: FastifyReply, expectedT
   if (authorizedOperator(request, expectedToken)) {
     return true;
   }
+  // The decision feed carries agent decisions only (operator calls are not recorded there),
+  // so a refused operator call leaves its evidence in the site log instead: a token spray
+  // shows up as a run of these lines with the source address.
+  request.log.warn(
+    { event: "glasswing_operator_unauthorized", method: request.method, url: request.url.split("?", 1)[0], ip: request.ip },
+    "operator token missing or invalid"
+  );
   reply.code(401).send({ error: { code: "operator_unauthorized", message: "A valid server-side operator token is required." } });
   return false;
 }

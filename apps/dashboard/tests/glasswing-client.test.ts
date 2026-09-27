@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { glasswingErrorFromBody, isGlasswingRunResult } from "../src/glasswing/client.js";
+import { glasswingErrorFromBody, glasswingSessionOutcome, isGlasswingRunResult } from "../src/glasswing/client.js";
 
 describe("glasswingErrorFromBody", () => {
   it("decodes the protected site error shape and the dashboard error shape", () => {
@@ -12,6 +12,17 @@ describe("glasswingErrorFromBody", () => {
     expect(dashboard.detail).toBe("set the url");
     expect(glasswingErrorFromBody(502, null).code).toBe("http_502");
     expect(glasswingErrorFromBody(500, "not json").code).toBe("http_500");
+  });
+});
+
+describe("glasswingSessionOutcome", () => {
+  it("distinguishes login from a missing launcher flag and other failures", () => {
+    expect(glasswingSessionOutcome(204, null)).toEqual({ state: "ready" });
+    expect(glasswingSessionOutcome(403, { error: "login_required" })).toEqual({ state: "login_required" });
+    const disabled = glasswingSessionOutcome(403, { error: "dev_session_disabled" });
+    expect(disabled.state).toBe("unavailable");
+    expect(disabled.detail).toContain("AIDENID_DASHBOARD_DEV_SESSION");
+    expect(glasswingSessionOutcome(503, { error: "operator_auth_not_configured" })).toMatchObject({ state: "unavailable", detail: "operator_auth_not_configured (HTTP 503)" });
   });
 });
 

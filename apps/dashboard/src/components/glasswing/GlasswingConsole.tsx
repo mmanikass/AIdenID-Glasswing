@@ -79,10 +79,13 @@ export function GlasswingConsole() {
     let disposed = false;
     (async () => {
       try {
-        const state = await ensureGlasswingSession();
+        const outcome = await ensureGlasswingSession();
         if (disposed) return;
-        setSession(state);
-        if (state !== "ready") return;
+        setSession(outcome.state);
+        if (outcome.state !== "ready") {
+          if (outcome.detail !== undefined) setError(outcome.detail);
+          return;
+        }
         const body = await glasswingGet<{ agents: readonly GlasswingAgent[] }>("agents");
         if (disposed) return;
         setAgents(body.agents);
