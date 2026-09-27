@@ -100,7 +100,9 @@ describe("lease hardening", () => {
     const { services, chainId } = servicesWithGrant();
     const redis = fakeRedis(true);
     await revokeChain(services, { chainId, reason: "owner_revoked", actorId: "platform_admin" }, { redis });
-    expect(redis.commands).toEqual([`SET lease:revoke:${chainId} platform_admin`, `EVAL cad lease:revoke:${chainId} platform_admin`]);
+    expect(redis.commands).toHaveLength(2);
+    expect(redis.commands[0]).toMatch(new RegExp(`^SET lease:revoke:${chainId} platform_admin#[0-9a-f-]{36}$`));
+    expect(redis.commands[1]).toMatch(new RegExp(`^EVAL cad lease:revoke:${chainId} platform_admin#[0-9a-f-]{36}$`));
     expect(redis.values.size).toBe(0);
 
     // A lease that expired and was re-acquired by someone else is left alone.
@@ -117,7 +119,7 @@ describe("lease hardening", () => {
     const { services, chainId } = servicesWithGrant();
     const redis = fakeRedis(false);
     await revokeChain(services, { chainId, reason: "owner_revoked", actorId: "platform_admin" }, { redis });
-    expect(redis.commands).toEqual([`SET lease:revoke:${chainId} platform_admin`, `GET lease:revoke:${chainId}`, `DEL lease:revoke:${chainId}`]);
+    expect(redis.commands.map((c) => c.split(" ").slice(0, 2).join(" "))).toEqual([`SET lease:revoke:${chainId}`, `GET lease:revoke:${chainId}`, `DEL lease:revoke:${chainId}`]);
   });
 
   it("serializes two concurrent in-process revokes by the same actor instead of letting the second pass through", async () => {

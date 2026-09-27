@@ -92,7 +92,12 @@ async function acquireRedisLease(
   ownerId: string,
   ttlMs: number
 ): Promise<AcquiredLease> {
-  const set = await redis.set(leaseKey, ownerId, "PX", ttlMs, "NX");
+  // Unique holder token per invocation: a retry by the same actor is a DIFFERENT holder, so a
+  // second revoke while the first one is active fails busy instead of passing through. This
+  // holds across processes, which share Redis but not the in-process lease. Request
+  // idempotency is separate (a repeated revoke keeps the first revokedAt).
+  const holder = `${ownerId}#${randomUUID()}`;
+  const set = await redis.set(leaseKey, holder, "PX", ttlMs, "NX");
   if (set) {
     return {
       mode: "redis",
@@ -103,12 +108,12 @@ async function acquireRedisLease(
           if (typeof redis.eval === "function") {
             // Atomic compare-and-delete: never removes a lease that expired and was
             // re-acquired by another holder between a GET and a DEL.
-            await redis.eval(REDIS_COMPARE_AND_DELETE, 1, leaseKey, ownerId);
+            await redis.eval(REDIS_COMPARE_AND_DELETE, 1, leaseKey, holder);
             return;
           }
           // Fallback for clients without eval: best-effort owner check, NOT atomic.
           const current = await redis.get(leaseKey);
-          if (current === ownerId) {
+          if (current === holder) {
             await redis.del(leaseKey);
           }
         } catch {
@@ -117,20 +122,7 @@ async function acquireRedisLease(
       }
     };
   }
-  // Idempotent path: if the existing lease holder is the same actor.id,
-  // proper-lockfile-style semantics treat this as a benign retry.
-  const existing = await redis.get(leaseKey);
-  if (existing === ownerId) {
-    return {
-      mode: "redis",
-      key: leaseKey,
-      chainId,
-      // Do not delete — the original holder will release on completion.
-      release: async () => {
-        /* no-op: not the original lease holder */
-      }
-    };
-  }
+  // Held by someone, possibly the same actor in another process: fail busy.
   throw new Error("concurrent revocation in flight");
 }
 
