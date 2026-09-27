@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { makeOutboxEvent } from "@aidenid/eventing";
 
 import { prefixedId } from "../ids.js";
@@ -43,10 +45,14 @@ export interface RevokeChainOptions {
   readonly pgClient?: RevocationPgClient | undefined;
   /** Lease TTL in milliseconds. Spec mandates ≤ 5_000ms. */
   readonly leaseTtlMs?: number | undefined;
+  /** How long an in-process lease waits for a competing holder before failing closed. Default 2_000ms. */
+  readonly leaseWaitMs?: number | undefined;
 }
 
 const MAX_LEASE_TTL_MS = 5_000;
 const DEFAULT_LEASE_TTL_MS = 5_000;
+const DEFAULT_LEASE_WAIT_MS = 2_000;
+const LEASE_POLL_MS = 5;
 
 /** In-process leases — only used as a last-resort fallback. */
 const inMemoryLeases = new Map<string, string>();
@@ -174,11 +180,12 @@ async function acquirePgLease(
   throw new Error("concurrent revocation in flight");
 }
 
-function acquireMemoryLease(
+async function acquireMemoryLease(
   leaseKey: string,
   chainId: string,
-  ownerId: string
-): AcquiredLease {
+  ownerId: string,
+  waitMs: number
+): Promise<AcquiredLease> {
   if (!inMemoryWarningEmitted) {
     inMemoryWarningEmitted = true;
     console.warn(
@@ -186,25 +193,41 @@ function acquireMemoryLease(
         "single-process lease; not safe for multi-replica deployments."
     );
   }
-  const existing = inMemoryLeases.get(leaseKey);
-  if (existing && existing !== ownerId) {
-    throw new Error("concurrent revocation in flight");
-  }
-  // Idempotent retry: same owner gets through; do not double-release.
-  const isNewHolder = !existing;
-  if (isNewHolder) {
-    inMemoryLeases.set(leaseKey, ownerId);
-  }
-  return {
-    mode: "memory",
-    key: leaseKey,
-    chainId,
-    release: async () => {
-      if (isNewHolder) {
-        inMemoryLeases.delete(leaseKey);
-      }
+  // The in-process lease is the co-located linearization point between a revocation and a
+  // protected effect on the same chain: whichever holds it first commits first and the other
+  // WAITS (bounded) instead of interleaving. When the wait is exhausted it fails closed.
+  const deadline = Date.now() + Math.max(0, waitMs);
+  for (;;) {
+    const existing = inMemoryLeases.get(leaseKey);
+    if (existing === undefined) {
+      inMemoryLeases.set(leaseKey, ownerId);
+      return {
+        mode: "memory",
+        key: leaseKey,
+        chainId,
+        release: async () => {
+          if (inMemoryLeases.get(leaseKey) === ownerId) {
+            inMemoryLeases.delete(leaseKey);
+          }
+        }
+      };
     }
-  };
+    if (existing === ownerId) {
+      // Idempotent retry: same owner gets through; do not double-release.
+      return {
+        mode: "memory",
+        key: leaseKey,
+        chainId,
+        release: async () => {
+          /* no-op: not the original lease holder */
+        }
+      };
+    }
+    if (Date.now() >= deadline) {
+      throw new Error("concurrent revocation in flight");
+    }
+    await new Promise<void>((resolve) => setTimeout(resolve, LEASE_POLL_MS));
+  }
 }
 
 async function acquireLease(
@@ -233,7 +256,7 @@ async function acquireLease(
       }
     };
   }
-  return acquireMemoryLease(leaseKey, chainId, ownerId);
+  return acquireMemoryLease(leaseKey, chainId, ownerId, options?.leaseWaitMs ?? DEFAULT_LEASE_WAIT_MS);
 }
 
 export async function revokeChain(
@@ -254,6 +277,18 @@ export async function revokeChain(
       },
       occurredAt
     );
+    // Revocation is terminal for the delegation itself, not only for tokens already issued.
+    // Bumping the epoch invalidates outstanding session tokens at the verifier, but
+    // /v1/sessions/exchange refuses only on grant.revokedAt, which nothing used to set: a
+    // revoked chain could mint a fresh session stamped with the new epoch immediately.
+    // Both authoritative state transitions (epoch, grant) happen BEFORE any fallible
+    // publication, so a bus failure leaves the chain revoked, never half-revoked.
+    // Idempotent: a second revoke bumps the epoch again but keeps the first revokedAt.
+    const grant = await services.store.getGrantByChainId(revocation.chainId);
+    const newlyRevoked = grant !== undefined && grant.revokedAt === undefined;
+    if (newlyRevoked) {
+      await services.store.revokeGrant(grant.id, occurredAt);
+    }
     await services.outbox.publish(
       makeOutboxEvent(prefixedId("evt"), "REVOCATION_EPOCH_BUMP", {
         chain_id: revocation.chainId,
@@ -262,15 +297,7 @@ export async function revokeChain(
         actor_id: revocation.actorId
       })
     );
-    const grant = await services.store.getGrantByChainId(revocation.chainId);
-    // Revocation is terminal for the delegation itself, not only for tokens already issued.
-    // Bumping the epoch invalidates outstanding session tokens at the verifier, but
-    // /v1/sessions/exchange refuses only on grant.revokedAt, which nothing used to set: a
-    // revoked chain could mint a fresh session stamped with the new epoch immediately.
-    // Mark the grant revoked under the same lease so the exchange path fails closed.
-    // Idempotent: a second revoke bumps the epoch again but keeps the first revokedAt.
-    if (grant !== undefined && grant.revokedAt === undefined) {
-      await services.store.revokeGrant(grant.id, occurredAt);
+    if (newlyRevoked) {
       await services.outbox.publish(
         makeOutboxEvent(prefixedId("evt"), "GRANT_REVOKED_HASH", {
           grant_id: grant.id,
@@ -305,14 +332,15 @@ export type ChainAuthorityStatus =
     };
 
 /**
- * Per-chain authority check for a co-located effect boundary.
+ * Per-chain authority SNAPSHOT: store reads only, no lock. Use it for display and for
+ * pre-checks; it is NOT the effect gate, because a revoke can land between this read and
+ * the effect. The gate is `withChainAuthority`, which takes the same per-chain lease that
+ * `revokeChain` holds.
  *
- * The verifier hot path compares a session token's revocation_epoch against ONE global
- * minimum (AIDENID_VERIFIER_MIN_REVOCATION_EPOCH / rollback.globalRevocationEpoch), so a
- * per-chain revocation is invisible to it unless the global floor is raised for every chain.
- * A protected route that shares the control-plane store calls this after the verifier says
- * allow, with the chain_id and revocation_epoch claims of the verified token, and refuses
- * unless the chain is current. No network, no model call: store reads only.
+ * Why a per-chain check exists at all: the verifier hot path compares a session token's
+ * revocation_epoch against ONE global minimum (AIDENID_VERIFIER_MIN_REVOCATION_EPOCH /
+ * rollback.globalRevocationEpoch), so a per-chain revocation is invisible to it unless the
+ * global floor is raised for every chain.
  */
 export async function checkChainAuthority(
   services: Pick<ControlPlaneServices, "store">,
@@ -334,6 +362,56 @@ export async function checkChainAuthority(
     return { current: false, reason: "epoch_stale", epoch };
   }
   return { current: true, epoch };
+}
+
+export type ChainEffectResult<T> =
+  | { readonly ok: true; readonly epoch: number; readonly value: T }
+  | {
+      readonly ok: false;
+      readonly reason: Extract<ChainAuthorityStatus, { current: false }>["reason"] | "chain_busy";
+    };
+
+/**
+ * The co-located effect boundary. Acquires the same per-chain lease `revokeChain` uses,
+ * re-reads authority under it, and runs the effect while holding it. That makes the lease
+ * the linearization point the contract requires: an effect that wins the lease commits
+ * before a concurrent revoke; a revoke that wins it makes the effect refuse before it runs.
+ * If the lease cannot be obtained within the bounded wait the effect is refused
+ * (`chain_busy`) rather than run unchecked. Nothing here touches the network or a model.
+ *
+ * Deployment note: with the in-memory lease this is a single-process guarantee, exactly
+ * like the in-memory revocation lease it shares. Multi-replica deployments pass the same
+ * Redis/Postgres lease options to both callers.
+ */
+export async function withChainAuthority<T>(
+  services: Pick<ControlPlaneServices, "store">,
+  input: {
+    readonly chainId: string;
+    readonly tokenRevocationEpoch: number;
+    readonly now?: Date | undefined;
+    /** Lease owner id; defaults to a unique id per effect so two effects never share a lease. */
+    readonly ownerId?: string | undefined;
+  },
+  effect: (authority: { readonly epoch: number }) => Promise<T> | T,
+  options?: RevokeChainOptions
+): Promise<ChainEffectResult<T>> {
+  const leaseKey = `lease:revoke:${input.chainId}`;
+  let lease: AcquiredLease;
+  try {
+    lease = await acquireLease(leaseKey, input.chainId, input.ownerId ?? `effect:${randomUUID()}`, options);
+  } catch {
+    return { ok: false, reason: "chain_busy" };
+  }
+  try {
+    const status = await checkChainAuthority(services, input);
+    if (!status.current) {
+      return { ok: false, reason: status.reason };
+    }
+    const value = await effect({ epoch: status.epoch });
+    return { ok: true, epoch: status.epoch, value };
+  } finally {
+    await lease.release();
+  }
 }
 
 /** Internal test seam: reset module-level state. */
