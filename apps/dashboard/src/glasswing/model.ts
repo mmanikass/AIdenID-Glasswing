@@ -70,6 +70,26 @@ export function expiryLabel(expiresAt: string, now: Date = new Date()): string {
   return `expires in ${minutes} min`;
 }
 
+/**
+ * Timeline sentence for a review decision, derived from the status the server returned, not
+ * from the button that was clicked: an approval after the chain was revoked comes back
+ * `denied` and must read as a refusal, because nothing was released.
+ */
+export function reviewDecisionLogText(
+  requested: "approve" | "deny",
+  review: { readonly id: string; readonly status: "pending" | "approved" | "denied" }
+): string {
+  if (review.status === "approved") {
+    return `Review ${review.id} approved: queued effect released once`;
+  }
+  if (review.status === "denied") {
+    return requested === "approve"
+      ? `Review ${review.id}: approval refused, the chain no longer has authority; nothing was released and a deny decision was recorded`
+      : `Review ${review.id} denied: recorded as a deny decision`;
+  }
+  return `Review ${review.id} is still awaiting an operator`;
+}
+
 export function reviewStatusLabel(status: "pending" | "approved" | "denied"): string {
   return status === "pending" ? "Awaiting operator" : status === "approved" ? "Approved, released once" : "Denied";
 }

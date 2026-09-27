@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { describeJev, expiryLabel, summarizeRun } from "../src/glasswing/model.js";
+import { describeJev, expiryLabel, reviewDecisionLogText, summarizeRun } from "../src/glasswing/model.js";
 import type { GlasswingJevAssessment, GlasswingRunResult } from "../src/glasswing/types.js";
 
 const jevClear: GlasswingJevAssessment = {
@@ -54,6 +54,17 @@ describe("describeJev", () => {
     expect(describeJev(jevClear)).toContain("low risk, confidence 92%, evidence full");
     expect(describeJev({ ...jevClear, verificationStatus: "unavailable", riskClass: null, modelConfidence: null, unavailableReason: "timeout", obligation: "review_required" })).toContain("unavailable (timeout)");
     expect(describeJev({ ...jevClear, verificationStatus: "inconclusive", riskClass: null, obligation: "review_required" })).toContain("inconclusive");
+  });
+});
+
+describe("reviewDecisionLogText", () => {
+  it("reports what the server did, so an approval refused after a revoke never reads as a release", () => {
+    expect(reviewDecisionLogText("approve", { id: "rev_1", status: "approved" })).toBe("Review rev_1 approved: queued effect released once");
+    expect(reviewDecisionLogText("approve", { id: "rev_1", status: "denied" })).toBe(
+      "Review rev_1: approval refused, the chain no longer has authority; nothing was released and a deny decision was recorded"
+    );
+    expect(reviewDecisionLogText("deny", { id: "rev_1", status: "denied" })).toBe("Review rev_1 denied: recorded as a deny decision");
+    expect(reviewDecisionLogText("approve", { id: "rev_1", status: "pending" })).toBe("Review rev_1 is still awaiting an operator");
   });
 });
 
