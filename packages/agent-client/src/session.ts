@@ -65,23 +65,26 @@ export async function exchangeSession(key: AgentKeyMaterial, input: ExchangeSess
   };
 }
 
+/**
+ * Bodyless-only contract. The HTTP message signature covers @method, @target-uri,
+ * authorization and dpop; it does NOT cover a request body, and the verifier reads only
+ * those headers, so a body could be altered after signing without failing verification.
+ * Until Content-Digest is signed and verified end to end, state-changing requests must
+ * carry their parameters in the path or query (which @target-uri covers), never in a body.
+ */
 export interface SignedFetchInput {
   readonly method?: string | undefined;
   readonly sessionToken?: string | undefined;
   readonly requestId?: string | undefined;
+  /** Extra headers; not covered by the signature, so never carry authority in them. */
   readonly headers?: Record<string, string> | undefined;
-  readonly body?: string | undefined;
   readonly fetchImpl?: FetchLike | undefined;
 }
 
-/** Perform one signed request against a verifier-protected route. */
+/** Perform one signed, bodyless request against a verifier-protected route. */
 export async function signedFetch(key: AgentKeyMaterial, url: string, input: SignedFetchInput = {}): Promise<Response> {
   const method = (input.method ?? "GET").toUpperCase();
   const fetchImpl = input.fetchImpl ?? fetch;
   const signed = buildSignedHeaders(key, { method, url: normalizeResource(url), sessionToken: input.sessionToken, requestId: input.requestId });
-  return fetchImpl(url, {
-    method,
-    headers: { ...(input.headers ?? {}), ...signed },
-    ...(input.body === undefined ? {} : { body: input.body })
-  });
+  return fetchImpl(url, { method, headers: { ...(input.headers ?? {}), ...signed } });
 }
