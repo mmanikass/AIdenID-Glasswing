@@ -1,4 +1,6 @@
-# Karthik lane: Jev evaluation (PR-07)
+# Jev evaluation harness: TypeSafe jev-1.13 as a candidate provider
+
+> **Scope:** this harness evaluates **TypeSafe `jev-1.13`** as a *candidate* provider. It does **not** exercise the shipped `@aidenid/jev` assessor on `main` (in-process, Anthropic provider, single purpose-fit rubric returning low/elevated/high). The rubrics also differ: this harness asks two separate questions (purpose fit and untrusted-instruction), so results here are not results for `@aidenid/jev`.
 
 | File | What |
 |---|---|
@@ -16,7 +18,7 @@
 pip install typesafe-sdk            # Python >= 3.10
 # put your key in .env (see .env.example), or export TYPESAFE_API_KEY=...
 # or OpenRouter:  export TYPESAFE_API_KEY=$OPENROUTER_API_KEY TYPESAFE_BASE_URL=https://openrouter.ai/api
-# or whatever endpoint/key staff or Carther give you (sponsor compute)
+# or another TypeSafe-compatible endpoint + key
 python jev_adapter.py               # one real call; should print purpose + injection choices
 ```
 
@@ -32,7 +34,4 @@ python metrics.py
 python run_eval.py --split holdout && python metrics.py
 ```
 
-**Current state:** adapter wired to Jev and tested against a fake server. 24/24 dev cases NOT_RUN until a key is set. Holdout is untouched.
-
-**Senti handoff:**
-`KARTHIK | PR-07 eval | build <SHA> | 0/24 dev run, holdout unused | 36 draft cases + runner ready | karthik-eval/ | need: Jev API key/endpoint (or confirm PR-07 uses the same jev-1.13 call)`
+**Current state:** adapter wired to TypeSafe Jev and tested against a simulated server. On 27 Sep every call via the Vercel AI Gateway returned 429/403, so all dev cases are NOT_RUN. Holdout is untouched.

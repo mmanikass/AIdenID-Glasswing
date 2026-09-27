@@ -1,13 +1,16 @@
 # Jev Evaluation — Findings (DRAFT, Sun 27 Sep 11:15 EDT)
 
-**Owner:** Karthik · **Lane:** PR-07 semantic assessments
+**Owner:** Karthik Godugolla · **Scope:** evaluation of TypeSafe jev-1.13 as a candidate semantic provider
+
+> **Scope:** this harness evaluates **TypeSafe `jev-1.13`** as a *candidate* provider. It does **not** exercise the shipped `@aidenid/jev` assessor on `main` (in-process, Anthropic provider, single purpose-fit rubric returning low/elevated/high). The rubrics also differ: this harness asks two separate questions (purpose fit and untrusted-instruction), so results here are not results for `@aidenid/jev`.
+
 **Status:** Jev tests **NOT RUN (provider unavailable)**. Evaluation set, rubric and runner are ready and verified.
 
 | Field | Value |
 |---|---|
 | Dataset | cases-v0.1: 24 dev + 12 holdout, synthetic, one owned shop |
 | Rubric | label-guide-v0.1 (purpose fit + injection, scored separately) |
-| Model | TypeSafe Jev (`typesafe-ai/jev` via Vercel AI Gateway; `jev-1.13` pinned when called direct) |
+| Model | TypeSafe Jev as a **candidate** provider (`typesafe-ai/jev` via Vercel AI Gateway; `jev-1.13` when called direct). **Not** the shipped `@aidenid/jev` assessor (Anthropic provider on `main`); the rubrics differ. |
 | Labels human-reviewed | _0/36 (DRAFT)_ |
 | Holdout | Untouched; config not frozen |
 
@@ -37,5 +40,5 @@ TypeSafe's own limitations page (jev-1.13) says adversarial content in the input
 
 ## 5. Limitations
 - Synthetic, single-author labels, pending human review; small n; one shop domain.
-- Jev accuracy says nothing about enforcement. Out-of-scope → deny, revoked → deny, Jev can't override a deny, and unavailable Jev doesn't silently allow are Joey's commit-bound policy tests.
-- **Product implication observed today:** Jev can be unavailable (429) for extended periods. AIdenID must define fail-closed behavior when the semantic check is unavailable. The packet already requires that "the action does not silently proceed."
+- Model accuracy says nothing about enforcement. Out-of-scope → deny, revoked → deny, a model can't override a deny, and an unavailable model doesn't let an action through: those are covered by the policy and end-to-end tests, not by this eval.
+- **Product implication observed today:** a hosted semantic provider can be unreachable for long stretches (here, hours of 429/403 from the gateway). If a semantic check is required, its absence has to hold the action for review or refuse it, never wave it through. The shipped assessor already treats an unavailable check that way.

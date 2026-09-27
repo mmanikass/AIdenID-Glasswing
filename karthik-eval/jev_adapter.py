@@ -5,7 +5,7 @@ Setup (pick ONE route):
   A) Direct:      export TYPESAFE_API_KEY=...    # console.typesafe.ai (new signups paused since 9/22)
   B) OpenRouter:  export TYPESAFE_API_KEY=$OPENROUTER_API_KEY
                   export TYPESAFE_BASE_URL=https://openrouter.ai/api
-  C) Sponsor/team endpoint: set TYPESAFE_BASE_URL + key to whatever Carther/staff give you.
+  C) Any other TypeSafe-compatible endpoint: set TYPESAFE_BASE_URL + key.
 
 What Jev sees per case (policy fields are deliberately NOT sent; Jev judges meaning only):
   state = {purpose, requested_action, retrieved_content}
