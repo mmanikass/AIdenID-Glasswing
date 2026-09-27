@@ -138,6 +138,9 @@ importers:
         specifier: workspace:*
         version: link:../crypto
     devDependencies:
+      '@aidenid/control-plane':
+        specifier: workspace:*
+        version: link:../../apps/control-plane
       '@aidenid/verifier-node':
         specifier: workspace:*
         version: link:../verifier-node
