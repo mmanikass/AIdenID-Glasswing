@@ -62,7 +62,7 @@ Dashboard:
 - `AIDENID_OPERATOR_TOKEN` (generated, same value as the site's `GLASSWING_OPERATOR_TOKEN`)
 - `AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN` (generated, distinct)
 - `AIDENID_DASHBOARD_SITE_ID=sit_glasswing_demo`
-- `AIDENID_DASHBOARD_REQUIRE_LIVE_DATA=true`, `AIDENID_REQUIRE_LOGIN=false`, `NEXT_TELEMETRY_DISABLED=1`
+- `AIDENID_DASHBOARD_REQUIRE_LIVE_DATA=true`, `AIDENID_REQUIRE_LOGIN=false`, `AIDENID_DASHBOARD_DEV_SESSION=true` (enables the loopback-only dev session route that hands the browser its request token as a cookie; only this launcher profile sets it), `NEXT_TELEMETRY_DISABLED=1`
 
 ## Ports
 

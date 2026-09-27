@@ -112,8 +112,14 @@ function pnpmProcess(args, env) {
 function runPnpm(args, env) {
   return new Promise((resolve, reject) => {
     const child = pnpmProcess(args, env);
-    child.once("error", reject);
+    // Tracked like the services so Ctrl+C during the build stops the build tree too.
+    children.add(child);
+    child.once("error", (failure) => {
+      children.delete(child);
+      reject(failure);
+    });
     child.once("close", (code, signal) => {
+      children.delete(child);
       if (signal !== null) {
         reject(new Error(`pnpm ${args.join(" ")} stopped by ${signal}`));
       } else if (code !== 0) {
@@ -196,8 +202,14 @@ if (operatorToken === dashboardRequestToken) {
 try {
   await runPnpm(["build"], buildEnvironment);
 } catch (failure) {
-  error(failure instanceof Error ? failure.message : "Local build failed.");
-  process.exitCode = 1;
+  if (!stopping) {
+    error(failure instanceof Error ? failure.message : "Local build failed.");
+    process.exitCode = 1;
+  }
+  process.exit();
+}
+if (stopping) {
+  // Interrupted during the build: do not start the services on the way out.
   process.exit();
 }
 
@@ -252,6 +264,8 @@ const dashboardEnvironment = {
   AIDENID_DASHBOARD_SITE_ID: DEMO_SITE_ID,
   AIDENID_DASHBOARD_REQUIRE_LIVE_DATA: "true",
   AIDENID_REQUIRE_LOGIN: "false",
+  // Enables the loopback-only dev session route; only this launcher profile sets it.
+  AIDENID_DASHBOARD_DEV_SESSION: "true",
   NEXT_TELEMETRY_DISABLED: "1",
 };
 
