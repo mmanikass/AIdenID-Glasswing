@@ -1,7 +1,5 @@
-# DRAFT — Test Flight 2026 submission file for AIdenID Glasswing.
-# The submission owner copies this file to
-#   glasswingvc/test-flight-2026/submissions/aidenid-glasswing.yml
-# and opens the submission PR there (due 1:00 PM ET Sunday Sep 27; code freeze 2:00 PM ET).
+# SUBMITTED — this file was filed as https://github.com/glasswingvc/test-flight-2026/pull/5 at 11:14 UTC on 27 Sep 2026
+# (validate check green). Edits until 14:00 ET go to that PR (branch submission/aidenid-glasswing on the mrrCarter fork).
 # The file name must match the slug. Members: real names and GitHub handles only, no emails/phones.
 
 team_name: "AIdenID"
