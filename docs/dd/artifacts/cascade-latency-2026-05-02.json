@@ -1,0 +1,314 @@
+{
+  "generatedAt": "2026-05-02T08:24:57.712Z",
+  "decisions": 1000,
+  "concurrency": 50,
+  "seed": 20260502,
+  "cascade": {
+    "mode": "all_layers_worst_case",
+    "shortCircuiting": false,
+    "layerOrder": [
+      "web_bot_auth_verify",
+      "delegation_lookup",
+      "fingerprint_stub",
+      "operator_reputation_lookup"
+    ],
+    "note": "This benchmark intentionally executes all four layers for Carter's full-cascade measurement; fail-fast short-circuit cases are outside this artifact."
+  },
+  "runtime": {
+    "node": "v24.13.0",
+    "platform": "win32",
+    "arch": "x64",
+    "cpus": 32
+  },
+  "profiles": [
+    {
+      "name": "web_bot_auth_verify",
+      "baseMs": 7,
+      "jitterMs": 7,
+      "tailEvery": 41,
+      "tailMs": 28,
+      "timeoutMs": 50,
+      "description": "Cloudflare Web Bot Auth token verification and key-material cache hit path."
+    },
+    {
+      "name": "delegation_lookup",
+      "baseMs": 10,
+      "jitterMs": 9,
+      "tailEvery": 47,
+      "tailMs": 45,
+      "timeoutMs": 75,
+      "description": "Delegation and grant lookup from the control-plane cache/read replica profile."
+    },
+    {
+      "name": "fingerprint_stub",
+      "baseMs": 32,
+      "jitterMs": 24,
+      "tailEvery": 37,
+      "tailMs": 75,
+      "timeoutMs": 95,
+      "description": "Default-off fingerprint sidecar stub with vendor-like latency and bounded timeout."
+    },
+    {
+      "name": "operator_reputation_lookup",
+      "baseMs": 15,
+      "jitterMs": 12,
+      "tailEvery": 43,
+      "tailMs": 55,
+      "timeoutMs": 85,
+      "description": "Operator reputation directory lookup using an external-cache timing profile."
+    }
+  ],
+  "wallClockMs": 2506.662,
+  "overall": {
+    "count": 1000,
+    "minMs": 86.941,
+    "avgMs": 120.725,
+    "p50Ms": 122.496,
+    "p95Ms": 154.777,
+    "p99Ms": 184.667,
+    "maxMs": 231.648
+  },
+  "plannedOverall": {
+    "count": 1000,
+    "minMs": 68.535,
+    "avgMs": 93.732,
+    "p50Ms": 91.033,
+    "p95Ms": 131.789,
+    "p99Ms": 148.522,
+    "maxMs": 199.536
+  },
+  "layers": {
+    "web_bot_auth_verify": {
+      "count": 1000,
+      "minMs": 9.254,
+      "avgMs": 16.355,
+      "p50Ms": 15.486,
+      "p95Ms": 24.917,
+      "p99Ms": 46.075,
+      "maxMs": 46.893
+    },
+    "delegation_lookup": {
+      "count": 1000,
+      "minMs": 14.17,
+      "avgMs": 20.955,
+      "p50Ms": 15.592,
+      "p95Ms": 31.031,
+      "p99Ms": 61.464,
+      "maxMs": 76.424
+    },
+    "fingerprint_stub": {
+      "count": 1000,
+      "minMs": 31.058,
+      "avgMs": 53.229,
+      "p50Ms": 46.575,
+      "p95Ms": 62.173,
+      "p99Ms": 107.7,
+      "maxMs": 108.654
+    },
+    "operator_reputation_lookup": {
+      "count": 1000,
+      "minMs": 14.908,
+      "avgMs": 30.177,
+      "p50Ms": 30.728,
+      "p95Ms": 31.263,
+      "p99Ms": 77.078,
+      "maxMs": 93.043
+    }
+  },
+  "plannedLayers": {
+    "web_bot_auth_verify": {
+      "count": 1000,
+      "minMs": 7.001,
+      "avgMs": 11.117,
+      "p50Ms": 10.572,
+      "p95Ms": 13.805,
+      "p99Ms": 35.232,
+      "maxMs": 40.71
+    },
+    "delegation_lookup": {
+      "count": 1000,
+      "minMs": 10.007,
+      "avgMs": 15.275,
+      "p50Ms": 14.669,
+      "p95Ms": 18.687,
+      "p99Ms": 51.639,
+      "maxMs": 63.73
+    },
+    "fingerprint_stub": {
+      "count": 1000,
+      "minMs": 32.012,
+      "avgMs": 45.32,
+      "p50Ms": 44.283,
+      "p95Ms": 55.459,
+      "p99Ms": 95,
+      "maxMs": 95
+    },
+    "operator_reputation_lookup": {
+      "count": 1000,
+      "minMs": 15.009,
+      "avgMs": 22.02,
+      "p50Ms": 20.941,
+      "p95Ms": 26.703,
+      "p99Ms": 70.629,
+      "maxMs": 79.7
+    }
+  },
+  "sampleCount": 1000,
+  "samplePreview": [
+    {
+      "index": 0,
+      "observedMs": 87.608,
+      "plannedMs": 82.924,
+      "layers": [
+        {
+          "name": "web_bot_auth_verify",
+          "plannedMs": 8.901,
+          "observedMs": 9.608,
+          "capped": false
+        },
+        {
+          "name": "delegation_lookup",
+          "plannedMs": 11.768,
+          "observedMs": 15.67,
+          "capped": false
+        },
+        {
+          "name": "fingerprint_stub",
+          "plannedMs": 46.783,
+          "observedMs": 46.385,
+          "capped": false
+        },
+        {
+          "name": "operator_reputation_lookup",
+          "plannedMs": 15.472,
+          "observedMs": 15.861,
+          "capped": false
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "observedMs": 118.304,
+      "plannedMs": 84.871,
+      "layers": [
+        {
+          "name": "web_bot_auth_verify",
+          "plannedMs": 10.804,
+          "observedMs": 24.917,
+          "capped": false
+        },
+        {
+          "name": "delegation_lookup",
+          "plannedMs": 13.886,
+          "observedMs": 15.386,
+          "capped": false
+        },
+        {
+          "name": "fingerprint_stub",
+          "plannedMs": 34.158,
+          "observedMs": 46.645,
+          "capped": false
+        },
+        {
+          "name": "operator_reputation_lookup",
+          "plannedMs": 26.023,
+          "observedMs": 31.302,
+          "capped": false
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "observedMs": 178.675,
+      "plannedMs": 148.522,
+      "layers": [
+        {
+          "name": "web_bot_auth_verify",
+          "plannedMs": 11.541,
+          "observedMs": 25.076,
+          "capped": false
+        },
+        {
+          "name": "delegation_lookup",
+          "plannedMs": 15.474,
+          "observedMs": 15.325,
+          "capped": false
+        },
+        {
+          "name": "fingerprint_stub",
+          "plannedMs": 95,
+          "observedMs": 107.7,
+          "capped": true
+        },
+        {
+          "name": "operator_reputation_lookup",
+          "plannedMs": 26.507,
+          "observedMs": 30.565,
+          "capped": false
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "observedMs": 118.347,
+      "plannedMs": 94.336,
+      "layers": [
+        {
+          "name": "web_bot_auth_verify",
+          "plannedMs": 8.82,
+          "observedMs": 9.508,
+          "capped": false
+        },
+        {
+          "name": "delegation_lookup",
+          "plannedMs": 17.51,
+          "observedMs": 30.567,
+          "capped": false
+        },
+        {
+          "name": "fingerprint_stub",
+          "plannedMs": 52.887,
+          "observedMs": 62.249,
+          "capped": false
+        },
+        {
+          "name": "operator_reputation_lookup",
+          "plannedMs": 15.119,
+          "observedMs": 16.005,
+          "capped": false
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "observedMs": 133.213,
+      "plannedMs": 97.57,
+      "layers": [
+        {
+          "name": "web_bot_auth_verify",
+          "plannedMs": 12.987,
+          "observedMs": 25.163,
+          "capped": false
+        },
+        {
+          "name": "delegation_lookup",
+          "plannedMs": 17.458,
+          "observedMs": 30.393,
+          "capped": false
+        },
+        {
+          "name": "fingerprint_stub",
+          "plannedMs": 41.961,
+          "observedMs": 47.081,
+          "capped": false
+        },
+        {
+          "name": "operator_reputation_lookup",
+          "plannedMs": 25.164,
+          "observedMs": 30.56,
+          "capped": false
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,4573 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "AIdenID Clearance Layer API",
+    "version": "0.0.0"
+  },
+  "paths": {
+    "/v1/sessions/exchange": {
+      "post": {
+        "operationId": "exchangeSession",
+        "summary": "Exchange a grant for an audience-bound DPoP session token",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionExchangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session token issued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionExchangeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/kill-switch": {
+      "get": {
+        "operationId": "getKillSwitch",
+        "summary": "Read rollback kill-switch state",
+        "responses": {
+          "200": {
+            "description": "Current kill-switch state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillSwitchState"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "updateKillSwitch",
+        "summary": "Activate or update rollback kill-switch state",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillSwitchUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated kill-switch state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillSwitchState"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearKillSwitch",
+        "summary": "Clear rollback kill-switch state",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KillSwitchClearRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cleared kill-switch state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KillSwitchState"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/decisions": {
+      "post": {
+        "operationId": "recordDecision",
+        "summary": "Record a decision event and queue persona audit when suspicion breaches threshold",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DecisionRecordRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Decision recorded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionRecordResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "operationId": "listDecisions",
+        "summary": "List decision events for the current site",
+        "responses": {
+          "200": {
+            "description": "Decision event page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/DecisionEvent"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/decisions/{id}/receipt": {
+      "get": {
+        "operationId": "getDecisionReceipt",
+        "summary": "Return the signed decision receipt and transparency inclusion proof for a decision",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^dec_[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed decision receipt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DecisionReceiptResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Decision or receipt not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/persona-audits": {
+      "get": {
+        "operationId": "listPersonaAudits",
+        "summary": "List queued post-incident persona audit handoffs",
+        "responses": {
+          "200": {
+            "description": "Persona audit incident page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PersonaAuditListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/policy-copilot/suggestions": {
+      "post": {
+        "operationId": "suggestPolicyDiffs",
+        "summary": "Generate offline, review-gated Policy Copilot diff suggestions",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PolicyCopilotSuggestionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pending AI-proposed policy suggestions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PolicyCopilotSuggestionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage/meter": {
+      "get": {
+        "operationId": "getUsageMeter",
+        "summary": "Return tenant/site usage, cleared-action billing estimate, latency, and quota status",
+        "responses": {
+          "200": {
+            "description": "Usage meter",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UsageMeterResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/billing/rollups": {
+      "get": {
+        "operationId": "getBillingPeriodRollup",
+        "summary": "Read a persisted closed-period billing rollup",
+        "responses": {
+          "200": {
+            "description": "Billing period rollup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingPeriodRollupResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rollup not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createBillingPeriodRollup",
+        "summary": "Generate and persist an invoice-grade billing rollup for a closed period",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingPeriodRollupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Billing period rollup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingPeriodRollupResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/billing/exports": {
+      "get": {
+        "operationId": "listBillingExports",
+        "summary": "List prepared billing exports for closed-period rollups",
+        "parameters": [
+          {
+            "name": "tenant_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "pattern": "^ten_[A-Za-z0-9_-]+$"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/BillingExportProvider"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "prepared",
+                "delivered"
+              ]
+            }
+          },
+          {
+            "name": "period_start",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "period_end",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Billing export page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingExportListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "createBillingExport",
+        "summary": "Prepare a Stripe Meter Event or QuickBooks Invoice export from a closed-period rollup",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingExportRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Billing export prepared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Rollup not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/billing/exports/{export_id}/delivery-receipt": {
+      "post": {
+        "operationId": "recordBillingExportDeliveryReceipt",
+        "summary": "Record provider delivery proof for a prepared billing export",
+        "parameters": [
+          {
+            "name": "export_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^bex_[a-f0-9]{32}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BillingExportDeliveryReceiptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Billing export with provider delivery proof",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingExportResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Billing export not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/usage/price-required": {
+      "get": {
+        "operationId": "getPriceRequiredBilling",
+        "summary": "Return per-issuer price_required decision and estimated gross billing aggregates",
+        "responses": {
+          "200": {
+            "description": "Per-issuer priced access billing summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceRequiredBillingResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/counterfactuals/enforcement": {
+      "get": {
+        "operationId": "getEnforcementCounterfactual",
+        "summary": "Estimate what observe-mode traffic would block if enforcement were enabled",
+        "responses": {
+          "200": {
+            "description": "Counterfactual enforcement summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CounterfactualResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/quarantine/pins": {
+      "get": {
+        "operationId": "listQuarantinePins",
+        "summary": "List active operator quarantine actor pins with TTL evidence",
+        "responses": {
+          "200": {
+            "description": "Quarantine actor pins",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuarantinePinListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/operators/reputation": {
+      "get": {
+        "operationId": "listOperatorReputations",
+        "summary": "List site-scoped operator reputation directory records",
+        "responses": {
+          "200": {
+            "description": "Operator reputation directory page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorReputationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/operators/reputation/{operator_actor_id}": {
+      "get": {
+        "operationId": "getOperatorReputation",
+        "summary": "Read one site-scoped operator reputation directory record",
+        "responses": {
+          "200": {
+            "description": "Operator reputation record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorReputationResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "upsertOperatorReputation",
+        "summary": "Create or replace one site-scoped operator reputation directory record",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OperatorReputationUpsertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated operator reputation record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorReputationResponse"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Created operator reputation record",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OperatorReputationResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant_id}/quota": {
+      "get": {
+        "operationId": "getTenantQuota",
+        "summary": "Read tenant quota guardrails",
+        "responses": {
+          "200": {
+            "description": "Tenant quota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantQuotaResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "upsertTenantQuota",
+        "summary": "Create or update tenant quota guardrails",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantQuotaUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tenant quota",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantQuotaResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/tenants/{tenant_id}/pricing-plan": {
+      "get": {
+        "operationId": "getTenantPricingPlan",
+        "summary": "Read tenant per-cleared-action pricing plan",
+        "responses": {
+          "200": {
+            "description": "Tenant pricing plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPricingPlanResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "upsertTenantPricingPlan",
+        "summary": "Create or update tenant per-cleared-action pricing plan",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TenantPricingPlanUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Tenant pricing plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TenantPricingPlanResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/privacy/erase": {
+      "post": {
+        "operationId": "erasePrivacySubject",
+        "summary": "Record a DSAR erase request and delete matching pseudonymous decision records",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PrivacyEraseRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Erase request accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyEraseResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/privacy/erasures": {
+      "get": {
+        "operationId": "listPrivacyErasures",
+        "summary": "List DSAR erase audit records",
+        "responses": {
+          "200": {
+            "description": "Privacy erase audit records",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PrivacyErasureListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/endpoints": {
+      "get": {
+        "operationId": "listWebhookEndpoints",
+        "summary": "List signed outbound webhook endpoints",
+        "responses": {
+          "200": {
+            "description": "Webhook endpoints",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointListResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "registerWebhookEndpoint",
+        "summary": "Register a signed outbound webhook endpoint",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookEndpointRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Webhook endpoint registered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WebhookEndpointResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/webhooks/signature-preview": {
+      "post": {
+        "operationId": "previewWebhookSignature",
+        "summary": "Preview signed outbound webhook headers for integration tests",
+        "responses": {
+          "200": {
+            "description": "Webhook signature preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/onboarding/target-plan": {
+      "get": {
+        "operationId": "getTargetOnboardingPlan",
+        "summary": "Return self-serve target onboarding payload and SDK install guidance",
+        "responses": {
+          "200": {
+            "description": "Target onboarding plan",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities": {
+      "post": {
+        "operationId": "submitAgentIdentityChallenge",
+        "summary": "Submit agent purpose and identity details after an AIdenID challenge",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentIdentityChallengeSubmissionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Agent identity challenge submission accepted for operator review",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIdentityChallengeSubmissionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid challenge submission",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Challenge submission body exceeds 16 KiB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Challenge submission rejected by local anti-abuse guard",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/submissions": {
+      "get": {
+        "operationId": "listAgentIdentitySubmissions",
+        "summary": "List agent identity challenge submissions for operator review",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^sit_[A-Za-z0-9_-]+$"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AgentIdentitySubmissionStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Agent identity challenge submissions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIdentityChallengeSubmissionListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/submissions/{submission_id}/review": {
+      "patch": {
+        "operationId": "reviewAgentIdentitySubmission",
+        "summary": "Approve or reject an agent identity challenge submission",
+        "parameters": [
+          {
+            "name": "submission_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^ais_[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentIdentityChallengeReviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Agent identity challenge submission reviewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIdentityChallengeReviewResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid review request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity challenge submission not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Identity challenge submission already reviewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/review-notifications": {
+      "get": {
+        "operationId": "listAgentIdentityReviewNotifications",
+        "summary": "List dashboard notifications created after identity challenge review decisions",
+        "parameters": [
+          {
+            "name": "site_id",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 128,
+              "pattern": "^sit_[A-Za-z0-9_-]+$"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/AgentIdentityReviewNotificationStatus"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity review notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIdentityReviewNotificationListResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/identities/review-notifications/{notification_id}": {
+      "patch": {
+        "operationId": "markAgentIdentityReviewNotificationRead",
+        "summary": "Mark an identity review dashboard notification as read",
+        "parameters": [
+          {
+            "name": "notification_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^arn_[A-Za-z0-9_-]+$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "status"
+                ],
+                "properties": {
+                  "status": {
+                    "const": "read"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Identity review notification marked read",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentIdentityReviewNotificationResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Identity review notification not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/.well-known/oauth-protected-resource": {
+      "get": {
+        "operationId": "getMcpWellKnownProtectedResourceMetadata",
+        "summary": "Return RFC 9728 OAuth protected-resource metadata for MCP clients",
+        "responses": {
+          "200": {
+            "description": "OAuth protected-resource metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpProtectedResourceMetadata"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp/protected-resource-metadata": {
+      "get": {
+        "operationId": "getMcpProtectedResourceMetadata",
+        "summary": "Return RFC 9728 OAuth protected-resource metadata for the AidenID MCP front door",
+        "responses": {
+          "200": {
+            "description": "OAuth protected-resource metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McpProtectedResourceMetadata"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "enum": [
+                        "invalid_mcp_resource_metadata_query"
+                      ]
+                    },
+                    "details": {},
+                    "message": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/v1/mcp/front-door/roadmap": {
+      "get": {
+        "operationId": "getMcpFrontDoorRoadmap",
+        "summary": "Return the AidenID-as-MCP authorization-server roadmap",
+        "responses": {
+          "200": {
+            "description": "MCP front-door roadmap",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ActorClass": {
+        "type": "string",
+        "enum": [
+          "verified_agent",
+          "signed_agent",
+          "likely_human",
+          "suspicious_automation",
+          "unknown"
+        ]
+      },
+      "DecisionAction": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "throttle",
+          "queue",
+          "sandbox",
+          "deny",
+          "price_required"
+        ]
+      },
+      "OperatorAction": {
+        "type": "string",
+        "enum": [
+          "allow",
+          "throttle",
+          "queue",
+          "sandbox",
+          "deny",
+          "price_required",
+          "quarantine"
+        ]
+      },
+      "ReasonCode": {
+        "type": "string",
+        "enum": [
+          "matched_policy",
+          "missing_signature",
+          "bad_signature",
+          "unknown_issuer",
+          "issuer_key_rotation_pending",
+          "audience_mismatch",
+          "resource_mismatch",
+          "token_expired",
+          "revoked",
+          "rate_limited",
+          "strict_route_degraded",
+          "purpose_required",
+          "purpose_disallowed",
+          "permission_scope_mismatch",
+          "fingerprint_risk",
+          "operator_reputation_suspended",
+          "operator_scope_mismatch",
+          "price_required",
+          "quarantine",
+          "operator_pinned",
+          "sandbox_policy",
+          "operator_override"
+        ]
+      },
+      "VerifierMode": {
+        "type": "string",
+        "enum": [
+          "observe",
+          "recommend",
+          "enforce"
+        ]
+      },
+      "QuotaStatus": {
+        "type": "string",
+        "enum": [
+          "ok",
+          "warning",
+          "throttled",
+          "exhausted"
+        ]
+      },
+      "TofuState": {
+        "type": "string",
+        "enum": [
+          "tofu_pending",
+          "trusted",
+          "rotation_pending",
+          "revoked"
+        ]
+      },
+      "ErrorEnvelope": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message",
+              "requestId"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {},
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "VerifierDenyResponse": {
+        "type": "object",
+        "required": [
+          "code",
+          "message",
+          "requestId",
+          "decision"
+        ],
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "AIDENID_DENIED"
+            ]
+          },
+          "message": {
+            "type": "string"
+          },
+          "requestId": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string",
+            "enum": [
+              "deny"
+            ]
+          },
+          "register_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Registration endpoint included only for unknown or suspicious automation denies."
+          },
+          "docs_url": {
+            "type": "string",
+            "format": "uri",
+            "description": "Agent onboarding documentation included only for unknown or suspicious automation denies."
+          },
+          "identity_challenge": {
+            "$ref": "#/components/schemas/AgentIdentityChallenge"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeField": {
+        "type": "string",
+        "enum": [
+          "purpose",
+          "requested_access_duration_seconds",
+          "provider_name",
+          "contact_url",
+          "cascade_attestation"
+        ]
+      },
+      "AgentIdentityChallengeOptionalField": {
+        "type": "string",
+        "enum": [
+          "operator_actor_id",
+          "purpose_rationale",
+          "jwks_url",
+          "delegation_authority_jwk_thumbprint_sha256",
+          "declaration"
+        ]
+      },
+      "AgentIdentityPurpose": {
+        "type": "string",
+        "enum": [
+          "research",
+          "commercial_crawl",
+          "ai_training",
+          "monitoring_uptime",
+          "accessibility",
+          "archival",
+          "search_indexing",
+          "competitive_intelligence",
+          "fraud_detection",
+          "other"
+        ],
+        "description": "Structured purpose declaration; `other` requires purpose_rationale."
+      },
+      "AgentIdentitySubmissionStatus": {
+        "type": "string",
+        "enum": [
+          "pending_review",
+          "approved",
+          "rejected"
+        ]
+      },
+      "AgentIdentityChallengeReviewAction": {
+        "type": "string",
+        "enum": [
+          "approve",
+          "reject"
+        ]
+      },
+      "AgentIdentityChallengeReviewTrustTier": {
+        "type": "string",
+        "enum": [
+          "restricted",
+          "trusted"
+        ]
+      },
+      "AgentIdentityChallengeReviewOperatorStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "watchlist"
+        ]
+      },
+      "OperatorDefaultScopeRoute": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@/%-]*(?:/\\*)?$"
+      },
+      "OperatorDefaultScopeRoutes": {
+        "type": "array",
+        "maxItems": 32,
+        "items": {
+          "$ref": "#/components/schemas/OperatorDefaultScopeRoute"
+        },
+        "default": []
+      },
+      "OperatorDefaultScopeRedirectPath": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256,
+        "pattern": "^/[A-Za-z0-9._~!$&'()*+,;=:@/%-]*$"
+      },
+      "AgentIdentityChallengeCascadePrompt": {
+        "type": "object",
+        "required": [
+          "ordinal",
+          "layer",
+          "title",
+          "prompt"
+        ],
+        "properties": {
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "crypto_identity",
+              "delegation_authorization",
+              "fingerprint_sidecar",
+              "operator_reputation"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallenge": {
+        "type": "object",
+        "required": [
+          "type",
+          "version",
+          "site_id",
+          "request_id",
+          "actor_class",
+          "decision",
+          "reason_codes",
+          "challenge_url",
+          "register_url",
+          "docs_url",
+          "required_fields",
+          "optional_fields",
+          "allowed_purposes",
+          "cascade_layers",
+          "submit"
+        ],
+        "properties": {
+          "type": {
+            "const": "aidenid.agent_identity_challenge"
+          },
+          "version": {
+            "const": "2026-05-18"
+          },
+          "site_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "actor_class": {
+            "$ref": "#/components/schemas/ActorClass"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "reason_codes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "items": {
+              "$ref": "#/components/schemas/ReasonCode"
+            }
+          },
+          "challenge_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "register_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "docs_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "required_fields": {
+            "type": "array",
+            "minItems": 5,
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityChallengeField"
+            }
+          },
+          "optional_fields": {
+            "type": "array",
+            "maxItems": 5,
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityChallengeOptionalField"
+            }
+          },
+          "allowed_purposes": {
+            "type": "array",
+            "minItems": 10,
+            "maxItems": 10,
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityPurpose"
+            }
+          },
+          "cascade_layers": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityChallengeCascadePrompt"
+            }
+          },
+          "submit": {
+            "type": "object",
+            "required": [
+              "method",
+              "content_type",
+              "headers"
+            ],
+            "properties": {
+              "method": {
+                "const": "POST"
+              },
+              "content_type": {
+                "const": "application/json"
+              },
+              "headers": {
+                "type": "array",
+                "maxItems": 8,
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeSubmissionRequest": {
+        "type": "object",
+        "required": [
+          "site_id",
+          "purpose",
+          "requested_access_duration_seconds",
+          "provider_name",
+          "contact_url",
+          "cascade_attestation"
+        ],
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "purpose": {
+            "$ref": "#/components/schemas/AgentIdentityPurpose"
+          },
+          "requested_access_duration_seconds": {
+            "type": "integer",
+            "minimum": 60,
+            "maximum": 7776000,
+            "description": "Requested access duration before the operator should expire or re-review this declaration."
+          },
+          "purpose_rationale": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "description": "Required when purpose is `other`; optional reviewer context otherwise."
+          },
+          "provider_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "operator_actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "contact_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "jwks_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "delegation_authority_jwk_thumbprint_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "cascade_attestation": {
+            "type": "array",
+            "minItems": 4,
+            "maxItems": 4,
+            "items": {
+              "type": "string",
+              "enum": [
+                "crypto_identity",
+                "delegation_authorization",
+                "fingerprint_sidecar",
+                "operator_reputation"
+              ]
+            }
+          },
+          "declaration": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeSubmission": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/AgentIdentityChallengeSubmissionRequest"
+          },
+          {
+            "type": "object",
+            "required": [
+              "id",
+              "status",
+              "submitted_at",
+              "requested_access_expires_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^ais_[A-Za-z0-9_-]+$"
+              },
+              "status": {
+                "$ref": "#/components/schemas/AgentIdentitySubmissionStatus"
+              },
+              "submitted_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "requested_access_expires_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "reviewed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "review_decision": {
+                "$ref": "#/components/schemas/AgentIdentityChallengeReviewAction"
+              },
+              "reviewer_identity_hash_sha256": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "review_reason": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1024
+              },
+              "approved_operator_actor_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "pattern": "^[A-Za-z0-9:_-]+$"
+              },
+              "operator_reputation_id": {
+                "type": "string",
+                "pattern": "^opr_[A-Za-z0-9_-]+$"
+              },
+              "assigned_trust_tier": {
+                "$ref": "#/components/schemas/AgentIdentityChallengeReviewTrustTier"
+              },
+              "assigned_operator_status": {
+                "$ref": "#/components/schemas/AgentIdentityChallengeReviewOperatorStatus"
+              },
+              "assigned_reputation_score": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "AgentIdentityChallengeReviewRequest": {
+        "type": "object",
+        "required": [
+          "action"
+        ],
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeReviewAction"
+          },
+          "operator_actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "trust_tier": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeReviewTrustTier",
+            "default": "restricted"
+          },
+          "operator_status": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeReviewOperatorStatus",
+            "default": "active"
+          },
+          "reputation_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "default_action": {
+            "$ref": "#/components/schemas/DecisionAction",
+            "default": "allow"
+          },
+          "default_scope_routes": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRoutes"
+          },
+          "default_scope_redirect_path": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRedirectPath"
+          },
+          "approval_expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Reviewer-selected approval expiry. It must be in the future and cannot exceed the submission requested_access_expires_at."
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "review_reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "description": "Required when action is reject; optional reviewer context for approvals."
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeReviewResponse": {
+        "type": "object",
+        "required": [
+          "submission"
+        ],
+        "properties": {
+          "submission": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeSubmission"
+          },
+          "operator": {
+            "description": "Included on approvals when the L4 operator reputation allowlist record was written.",
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeSubmissionResponse": {
+        "type": "object",
+        "required": [
+          "submission",
+          "next_steps"
+        ],
+        "properties": {
+          "submission": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeSubmission"
+          },
+          "next_steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityChallengeSubmissionListResponse": {
+        "type": "object",
+        "required": [
+          "submissions"
+        ],
+        "properties": {
+          "submissions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityChallengeSubmission"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityReviewNotificationStatus": {
+        "type": "string",
+        "enum": [
+          "unread",
+          "read"
+        ]
+      },
+      "AgentIdentityReviewNotification": {
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "submission_id",
+          "review_decision",
+          "provider_name",
+          "contact_url",
+          "reviewer_identity_hash_sha256",
+          "status",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^arn_[A-Za-z0-9_-]+$"
+          },
+          "site_id": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "submission_id": {
+            "type": "string",
+            "pattern": "^ais_[A-Za-z0-9_-]+$"
+          },
+          "review_decision": {
+            "$ref": "#/components/schemas/AgentIdentityChallengeReviewAction"
+          },
+          "provider_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "operator_actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[A-Za-z0-9:_-]+$"
+          },
+          "contact_url": {
+            "type": "string",
+            "format": "uri",
+            "maxLength": 2048
+          },
+          "reviewer_identity_hash_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "review_reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "status": {
+            "$ref": "#/components/schemas/AgentIdentityReviewNotificationStatus"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "read_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityReviewNotificationResponse": {
+        "type": "object",
+        "required": [
+          "notification"
+        ],
+        "properties": {
+          "notification": {
+            "$ref": "#/components/schemas/AgentIdentityReviewNotification"
+          }
+        },
+        "additionalProperties": false
+      },
+      "AgentIdentityReviewNotificationListResponse": {
+        "type": "object",
+        "required": [
+          "notifications"
+        ],
+        "properties": {
+          "notifications": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgentIdentityReviewNotification"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionExchangeRequest": {
+        "type": "object",
+        "required": [
+          "grant_id",
+          "audience",
+          "resource",
+          "proof_jkt",
+          "requested_permissions"
+        ],
+        "properties": {
+          "grant_id": {
+            "type": "string",
+            "pattern": "^grt_[A-Za-z0-9_-]+$"
+          },
+          "audience": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "proof_jkt": {
+            "type": "string"
+          },
+          "requested_permissions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 64,
+            "items": {
+              "type": "string"
+            }
+          },
+          "llm_brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionExchangeResponse": {
+        "type": "object",
+        "required": [
+          "access_token",
+          "token_type",
+          "expires_in",
+          "session_id",
+          "revocation_epoch"
+        ],
+        "properties": {
+          "access_token": {
+            "type": "string"
+          },
+          "token_type": {
+            "const": "DPoP"
+          },
+          "expires_in": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "session_id": {
+            "type": "string",
+            "pattern": "^ses_[A-Za-z0-9_-]+$"
+          },
+          "revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "KillSwitchState": {
+        "type": "object",
+        "required": [
+          "active",
+          "deny_new_sessions",
+          "global_enforcement_pause",
+          "route_mode_overrides",
+          "crypto_path_rollout"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "deny_new_sessions": {
+            "type": "boolean"
+          },
+          "global_enforcement_pause": {
+            "type": "boolean"
+          },
+          "route_mode_overrides": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^/"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VerifierMode"
+            }
+          },
+          "crypto_path_rollout": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "shadow",
+              "enforce"
+            ]
+          },
+          "min_revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "KillSwitchUpdateRequest": {
+        "type": "object",
+        "required": [
+          "active",
+          "reason",
+          "actor_id"
+        ],
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "deny_new_sessions": {
+            "type": "boolean"
+          },
+          "global_enforcement_pause": {
+            "type": "boolean"
+          },
+          "route_mode_overrides": {
+            "type": "object",
+            "propertyNames": {
+              "pattern": "^/"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/VerifierMode"
+            }
+          },
+          "crypto_path_rollout": {
+            "type": "string",
+            "enum": [
+              "disabled",
+              "shadow",
+              "enforce"
+            ]
+          },
+          "min_revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "KillSwitchClearRequest": {
+        "type": "object",
+        "required": [
+          "reason",
+          "actor_id"
+        ],
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotDecisionSample": {
+        "type": "object",
+        "required": [
+          "route_template",
+          "method",
+          "actor_class",
+          "decision"
+        ],
+        "properties": {
+          "route_template": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_class": {
+            "$ref": "#/components/schemas/ActorClass"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotSuggestionRequest": {
+        "type": "object",
+        "required": [
+          "policy_yaml"
+        ],
+        "properties": {
+          "policy_yaml": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision_samples": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyCopilotDecisionSample"
+            },
+            "default": []
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "input_refs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "default": []
+          },
+          "suspicious_automation_threshold": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "max_suggestions": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotDiffOperation": {
+        "type": "object",
+        "required": [
+          "op",
+          "path",
+          "after"
+        ],
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "add",
+              "replace"
+            ]
+          },
+          "path": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "before": {},
+          "after": {}
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotOutputDiff": {
+        "type": "object",
+        "required": [
+          "format",
+          "operations",
+          "summary"
+        ],
+        "properties": {
+          "format": {
+            "const": "aidenid.policy.diff.v1"
+          },
+          "operations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyCopilotDiffOperation"
+            }
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotMetadata": {
+        "type": "object",
+        "required": [
+          "model",
+          "tool",
+          "prompt_digest_sha256",
+          "input_refs",
+          "generated_at"
+        ],
+        "properties": {
+          "model": {
+            "const": "offline-policy-copilot-rules-v1"
+          },
+          "tool": {
+            "const": "aidenid-policy-copilot"
+          },
+          "prompt_digest_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "input_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotSuggestion": {
+        "type": "object",
+        "required": [
+          "id",
+          "label",
+          "approval_status",
+          "risk_level",
+          "rationale",
+          "metadata",
+          "policy_sha256",
+          "proposed_policy_sha256",
+          "proposed_policy_yaml",
+          "output_diff"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^pcs_[A-Za-z0-9_-]+$"
+          },
+          "label": {
+            "const": "ai_proposed"
+          },
+          "approval_status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "risk_level": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium"
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/PolicyCopilotMetadata"
+          },
+          "policy_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "proposed_policy_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "proposed_policy_yaml": {
+            "type": "string"
+          },
+          "output_diff": {
+            "$ref": "#/components/schemas/PolicyCopilotOutputDiff"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyCopilotSuggestionResponse": {
+        "type": "object",
+        "required": [
+          "suggestions",
+          "apply_policy"
+        ],
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PolicyCopilotSuggestion"
+            }
+          },
+          "apply_policy": {
+            "const": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantQuota": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "monthly_decision_limit",
+          "stored_decision_limit",
+          "target_limit",
+          "updated_at"
+        ],
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "monthly_decision_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stored_decision_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantQuotaUpdateRequest": {
+        "type": "object",
+        "required": [
+          "monthly_decision_limit",
+          "stored_decision_limit",
+          "target_limit"
+        ],
+        "properties": {
+          "monthly_decision_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stored_decision_limit": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "target_limit": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantQuotaResponse": {
+        "type": "object",
+        "required": [
+          "quota",
+          "target_count"
+        ],
+        "properties": {
+          "quota": {
+            "$ref": "#/components/schemas/TenantQuota"
+          },
+          "target_count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantPricingPlan": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "plan_tier",
+          "currency",
+          "unit_price_usd",
+          "included_monthly_cleared_decisions",
+          "effective_from",
+          "updated_at"
+        ],
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "plan_tier": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$"
+          },
+          "currency": {
+            "const": "USD"
+          },
+          "unit_price_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "included_monthly_cleared_decisions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantPricingPlanUpdateRequest": {
+        "type": "object",
+        "required": [
+          "plan_tier",
+          "unit_price_usd",
+          "included_monthly_cleared_decisions"
+        ],
+        "properties": {
+          "plan_tier": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9_-]{1,63}$"
+          },
+          "unit_price_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "included_monthly_cleared_decisions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "effective_from": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "TenantPricingPlanResponse": {
+        "type": "object",
+        "required": [
+          "pricing_plan"
+        ],
+        "properties": {
+          "pricing_plan": {
+            "$ref": "#/components/schemas/TenantPricingPlan"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingPeriodRollupRequest": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "period_start",
+          "period_end"
+        ],
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50000,
+            "default": 50000
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingPeriodRollup": {
+        "type": "object",
+        "required": [
+          "id",
+          "tenant_id",
+          "period_start",
+          "period_end",
+          "plan_tier",
+          "currency",
+          "unit_price_usd",
+          "included_cleared_decisions",
+          "cleared_decision_count",
+          "billable_cleared_decision_count",
+          "overage_cleared_decision_count",
+          "estimated_cost_usd",
+          "price_required_gross_usd",
+          "invoice_line_item_id",
+          "export_idempotency_key",
+          "generated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^bil_[a-f0-9]{32}$"
+          },
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "plan_tier": {
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD"
+          },
+          "unit_price_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "included_cleared_decisions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "cleared_decision_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "billable_cleared_decision_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "overage_cleared_decision_count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_cost_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "price_required_gross_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "invoice_line_item_id": {
+            "type": "string",
+            "pattern": "^ili_[a-f0-9]{32}$"
+          },
+          "export_idempotency_key": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingPeriodRollupResponse": {
+        "type": "object",
+        "required": [
+          "billing_rollup"
+        ],
+        "properties": {
+          "billing_rollup": {
+            "$ref": "#/components/schemas/BillingPeriodRollup"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingExportProvider": {
+        "type": "string",
+        "enum": [
+          "stripe_meter_event",
+          "quickbooks_invoice"
+        ]
+      },
+      "BillingExportRequest": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "period_start",
+          "period_end",
+          "provider",
+          "destination_ref"
+        ],
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/BillingExportProvider"
+          },
+          "destination_ref": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingExportDeliveryReceiptRequest": {
+        "type": "object",
+        "required": [
+          "provider_receipt_id",
+          "provider_receipt_status"
+        ],
+        "properties": {
+          "provider_receipt_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "provider_receipt_status": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "provider_response": {
+            "type": "object"
+          },
+          "delivered_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingExport": {
+        "type": "object",
+        "required": [
+          "id",
+          "rollup_id",
+          "tenant_id",
+          "period_start",
+          "period_end",
+          "provider",
+          "destination_ref",
+          "idempotency_key",
+          "payload_sha256",
+          "payload",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^bex_[a-f0-9]{32}$"
+          },
+          "rollup_id": {
+            "type": "string",
+            "pattern": "^bil_[a-f0-9]{32}$"
+          },
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "period_start": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "period_end": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/BillingExportProvider"
+          },
+          "destination_ref": {
+            "type": "string"
+          },
+          "idempotency_key": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "payload": {
+            "type": "object"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "prepared",
+              "delivered"
+            ]
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "delivered_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "provider_receipt_id": {
+            "type": "string"
+          },
+          "provider_receipt_status": {
+            "type": "string"
+          },
+          "provider_receipt_payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "provider_receipt_recorded_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingExportResponse": {
+        "type": "object",
+        "required": [
+          "billing_export"
+        ],
+        "properties": {
+          "billing_export": {
+            "$ref": "#/components/schemas/BillingExport"
+          }
+        },
+        "additionalProperties": false
+      },
+      "BillingExportListResponse": {
+        "type": "object",
+        "required": [
+          "billing_exports"
+        ],
+        "properties": {
+          "billing_exports": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BillingExport"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "UsageMeterResponse": {
+        "type": "object",
+        "required": [
+          "usage"
+        ],
+        "properties": {
+          "usage": {
+            "type": "object",
+            "required": [
+              "decision_count",
+              "cleared_decision_count",
+              "billable_cleared_decision_count",
+              "included_cleared_decision_count",
+              "overage_cleared_decision_count",
+              "pricing_plan_tier",
+              "billing_currency",
+              "billing_unit_price_usd",
+              "estimated_cost_usd",
+              "price_required_gross_usd",
+              "quota_status"
+            ],
+            "properties": {
+              "site_id": {
+                "type": "string",
+                "pattern": "^sit_[A-Za-z0-9_-]+$"
+              },
+              "tenant_id": {
+                "type": "string",
+                "pattern": "^ten_[A-Za-z0-9_-]+$"
+              },
+              "decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "cleared_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "billable_cleared_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "included_cleared_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "overage_cleared_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pricing_plan_tier": {
+                "type": "string"
+              },
+              "billing_currency": {
+                "const": "USD"
+              },
+              "billing_unit_price_usd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "estimated_cost_usd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "price_required_gross_usd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "p95_latency_us": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0
+              },
+              "quota": {
+                "$ref": "#/components/schemas/TenantQuota"
+              },
+              "quota_remaining": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "quota_status": {
+                "type": "string",
+                "enum": [
+                  "ok",
+                  "warning",
+                  "exceeded"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriceRequiredBillingResponse": {
+        "type": "object",
+        "required": [
+          "price_required_billing"
+        ],
+        "properties": {
+          "price_required_billing": {
+            "type": "object",
+            "required": [
+              "decision_count",
+              "priced_decision_count",
+              "estimated_gross_usd",
+              "by_issuer"
+            ],
+            "properties": {
+              "site_id": {
+                "type": "string",
+                "pattern": "^sit_[A-Za-z0-9_-]+$"
+              },
+              "tenant_id": {
+                "type": "string",
+                "pattern": "^ten_[A-Za-z0-9_-]+$"
+              },
+              "decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "priced_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "estimated_gross_usd": {
+                "type": "number",
+                "minimum": 0
+              },
+              "by_issuer": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "issuer",
+                    "decision_count",
+                    "policy_decision_count",
+                    "operator_decision_count",
+                    "priced_decision_count",
+                    "estimated_gross_usd",
+                    "routes"
+                  ],
+                  "properties": {
+                    "issuer": {
+                      "type": "string"
+                    },
+                    "decision_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "policy_decision_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "operator_decision_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "priced_decision_count": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "estimated_gross_usd": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "routes": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "CounterfactualResponse": {
+        "type": "object",
+        "required": [
+          "counterfactual"
+        ],
+        "properties": {
+          "counterfactual": {
+            "type": "object",
+            "required": [
+              "site_id",
+              "sample_count",
+              "currently_blocked",
+              "would_block_if_enforced",
+              "newly_blocked_if_enforced",
+              "block_rate",
+              "by_actor_class"
+            ],
+            "properties": {
+              "site_id": {
+                "type": "string",
+                "pattern": "^sit_[A-Za-z0-9_-]+$"
+              },
+              "route_template": {
+                "type": "string",
+                "pattern": "^/"
+              },
+              "sample_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "currently_blocked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "would_block_if_enforced": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "newly_blocked_if_enforced": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "block_rate": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "by_actor_class": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrivacyEraseRequest": {
+        "type": "object",
+        "required": [
+          "site_id",
+          "subject_handle",
+          "reason",
+          "actor_id"
+        ],
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "subject_handle": {
+            "type": "string",
+            "minLength": 8
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_id": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrivacyEraseResponse": {
+        "type": "object",
+        "required": [
+          "erasure"
+        ],
+        "properties": {
+          "erasure": {
+            "type": "object",
+            "required": [
+              "id",
+              "site_id",
+              "subject_handle",
+              "erased_decision_count",
+              "occurred_at"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^dsr_[A-Za-z0-9_-]+$"
+              },
+              "site_id": {
+                "type": "string",
+                "pattern": "^sit_[A-Za-z0-9_-]+$"
+              },
+              "subject_handle": {
+                "type": "string"
+              },
+              "erased_decision_count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "occurred_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "PrivacyErasureListResponse": {
+        "type": "object",
+        "required": [
+          "erasures"
+        ],
+        "properties": {
+          "erasures": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookEndpointRequest": {
+        "type": "object",
+        "required": [
+          "tenant_id",
+          "url",
+          "event_types",
+          "signing_secret_ref"
+        ],
+        "properties": {
+          "tenant_id": {
+            "type": "string",
+            "pattern": "^ten_[A-Za-z0-9_-]+$"
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "event_types": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "signing_secret_ref": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookEndpointResponse": {
+        "type": "object",
+        "required": [
+          "endpoint",
+          "signature"
+        ],
+        "properties": {
+          "endpoint": {
+            "type": "object"
+          },
+          "signature": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WebhookEndpointListResponse": {
+        "type": "object",
+        "required": [
+          "endpoints"
+        ],
+        "properties": {
+          "endpoints": {
+            "type": "array",
+            "items": {
+              "type": "object"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "McpProtectedResourceMetadata": {
+        "type": "object",
+        "required": [
+          "resource",
+          "authorization_servers",
+          "scopes_supported",
+          "bearer_methods_supported",
+          "resource_documentation",
+          "resource_policy_uri",
+          "dpop_bound_access_tokens_required",
+          "dpop_signing_alg_values_supported",
+          "resource_signing_alg_values_supported"
+        ],
+        "properties": {
+          "resource": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "authorization_servers": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string",
+              "format": "uri",
+              "pattern": "^https://"
+            }
+          },
+          "scopes_supported": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "bearer_methods_supported": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "header"
+              ]
+            }
+          },
+          "resource_documentation": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "resource_policy_uri": {
+            "type": "string",
+            "format": "uri",
+            "pattern": "^https://"
+          },
+          "dpop_bound_access_tokens_required": {
+            "const": true
+          },
+          "dpop_signing_alg_values_supported": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EdDSA",
+                "ES256"
+              ]
+            }
+          },
+          "resource_signing_alg_values_supported": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "EdDSA",
+                "ES256"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "QuarantinePinListResponse": {
+        "type": "object",
+        "required": [
+          "pins"
+        ],
+        "properties": {
+          "pins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "decision_id",
+                "site_id",
+                "actor_class",
+                "request_id",
+                "operator_actor_id",
+                "expires_at",
+                "created_at"
+              ],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^qpn_[A-Za-z0-9_-]+$"
+                },
+                "decision_id": {
+                  "type": "string",
+                  "pattern": "^dec_[A-Za-z0-9_-]+$"
+                },
+                "site_id": {
+                  "type": "string",
+                  "pattern": "^sit_[A-Za-z0-9_-]+$"
+                },
+                "actor_class": {
+                  "type": "string"
+                },
+                "issuer": {
+                  "type": "string"
+                },
+                "subject_handle": {
+                  "type": "string"
+                },
+                "request_id": {
+                  "type": "string"
+                },
+                "operator_actor_id": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                },
+                "expires_at": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "created_at": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorReputation": {
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "operator_actor_id",
+          "trust_tier",
+          "status",
+          "reputation_score",
+          "default_action",
+          "default_scope_routes",
+          "updated_by",
+          "created_at",
+          "updated_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^opr_[A-Za-z0-9_-]+$"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "operator_actor_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "trust_tier": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "trusted",
+              "restricted"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "watchlist",
+              "suspended",
+              "expired"
+            ]
+          },
+          "reputation_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "default_action": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "default_scope_routes": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRoutes"
+          },
+          "default_scope_redirect_path": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRedirectPath"
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "last_reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Null or absent records are permanent. Expired records are excluded from verifier snapshots."
+          },
+          "updated_by": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorReputationUpsertRequest": {
+        "type": "object",
+        "required": [
+          "site_id",
+          "trust_tier",
+          "status",
+          "reputation_score"
+        ],
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "display_name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          },
+          "trust_tier": {
+            "type": "string",
+            "enum": [
+              "unknown",
+              "trusted",
+              "restricted"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "watchlist",
+              "suspended",
+              "expired"
+            ]
+          },
+          "reputation_score": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "default_action": {
+            "$ref": "#/components/schemas/DecisionAction",
+            "default": "allow"
+          },
+          "default_scope_routes": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRoutes"
+          },
+          "default_scope_redirect_path": {
+            "$ref": "#/components/schemas/OperatorDefaultScopeRedirectPath"
+          },
+          "notes": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024
+          },
+          "last_reviewed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Omit to preserve an existing expiry on update; set null to make a record permanent."
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorReputationResponse": {
+        "type": "object",
+        "required": [
+          "operator"
+        ],
+        "properties": {
+          "operator": {
+            "$ref": "#/components/schemas/OperatorReputation"
+          }
+        },
+        "additionalProperties": false
+      },
+      "OperatorReputationListResponse": {
+        "type": "object",
+        "required": [
+          "operators"
+        ],
+        "properties": {
+          "operators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OperatorReputation"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CascadeTraceEntry": {
+        "type": "object",
+        "required": [
+          "ordinal",
+          "layer",
+          "status",
+          "reason",
+          "latency_us"
+        ],
+        "properties": {
+          "ordinal": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 4
+          },
+          "layer": {
+            "type": "string",
+            "enum": [
+              "crypto_identity",
+              "delegation_authorization",
+              "fingerprint_sidecar",
+              "operator_reputation"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "fail",
+              "skipped",
+              "not_configured"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128,
+            "pattern": "^[a-z][a-z0-9_.:-]{0,127}$"
+          },
+          "latency_us": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 16,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "CascadeTrace": {
+        "type": "array",
+        "minItems": 4,
+        "maxItems": 4,
+        "items": {
+          "$ref": "#/components/schemas/CascadeTraceEntry"
+        }
+      },
+      "ControlPlaneDecisionRecord": {
+        "type": "object",
+        "required": [
+          "id",
+          "site_id",
+          "request_id",
+          "actor_class",
+          "decision",
+          "route_template",
+          "method",
+          "occurred_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^dec_[A-Za-z0-9_-]+$"
+          },
+          "tenant_id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "actor_class": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "recommended_decision": {
+            "type": "string"
+          },
+          "route_template": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "method": {
+            "type": "string"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "latency_us": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subject_handle": {
+            "type": "string"
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "llm_brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "operator_action": {
+            "$ref": "#/components/schemas/OperatorAction"
+          },
+          "operator_action_actor_id": {
+            "type": "string"
+          },
+          "operator_action_reason": {
+            "type": "string"
+          },
+          "operator_action_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operator_action_effective_decision": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "operator_action_expires_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operator_action_effects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "suspicion_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "cascade_trace": {
+            "$ref": "#/components/schemas/CascadeTrace"
+          },
+          "receipt": {
+            "$ref": "#/components/schemas/DecisionReceiptSummary"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionReceiptSummary": {
+        "type": "object",
+        "required": [
+          "key_id",
+          "payload_sha256",
+          "jws_sha256",
+          "transparency_leaf_hash",
+          "transparency_leaf_index",
+          "transparency_checkpoint",
+          "transparency_inclusion_proof"
+        ],
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "jws_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "transparency_leaf_hash": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "transparency_leaf_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "transparency_checkpoint": {
+            "type": "object"
+          },
+          "transparency_inclusion_proof": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionReceiptResponse": {
+        "type": "object",
+        "required": [
+          "decision_id",
+          "receipt_jws",
+          "receipt_key_id",
+          "receipt_public_jwk",
+          "receipt_payload_sha256",
+          "receipt_jws_sha256",
+          "verified",
+          "transparency"
+        ],
+        "properties": {
+          "decision_id": {
+            "type": "string",
+            "pattern": "^dec_[A-Za-z0-9_-]+$"
+          },
+          "receipt_jws": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_key_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "receipt_public_jwk": {
+            "type": "object"
+          },
+          "receipt_payload_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "receipt_jws_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "transparency": {
+            "type": "object",
+            "required": [
+              "leaf_hash",
+              "leaf_index",
+              "checkpoint",
+              "inclusion_proof"
+            ],
+            "properties": {
+              "leaf_hash": {
+                "type": "string",
+                "pattern": "^[a-f0-9]{64}$"
+              },
+              "leaf_index": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "checkpoint": {
+                "type": "object"
+              },
+              "inclusion_proof": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionRecordRequest": {
+        "type": "object",
+        "required": [
+          "site_id",
+          "request_id",
+          "actor_class",
+          "decision",
+          "route_template",
+          "method"
+        ],
+        "properties": {
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_class": {
+            "type": "string",
+            "minLength": 1
+          },
+          "decision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "recommended_decision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "route_template": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "method": {
+            "type": "string",
+            "minLength": 1
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "latency_us": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subject_handle": {
+            "type": "string",
+            "minLength": 8
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1
+          },
+          "llm_brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "price_usd": {
+            "type": "number",
+            "minimum": 0
+          },
+          "suspicion_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "cascade_trace": {
+            "$ref": "#/components/schemas/CascadeTrace"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionRecordResponse": {
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ControlPlaneDecisionRecord"
+          },
+          "persona_audit": {
+            "type": "object",
+            "required": [
+              "id",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^aud_[A-Za-z0-9_-]+$"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "queued",
+                  "completed"
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonaAuditNarrative": {
+        "type": "object",
+        "required": [
+          "title",
+          "summary",
+          "evidence_refs",
+          "recommended_actions"
+        ],
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "recommended_actions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonaAuditIncident": {
+        "type": "object",
+        "required": [
+          "id",
+          "trigger_type",
+          "status",
+          "severity",
+          "tool",
+          "persona_pack",
+          "input_refs",
+          "narrative",
+          "created_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^aud_[A-Za-z0-9_-]+$"
+          },
+          "trigger_type": {
+            "type": "string",
+            "enum": [
+              "revocation_epoch",
+              "suspicion_threshold"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "completed"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "medium",
+              "high"
+            ]
+          },
+          "tool": {
+            "const": "create-sentinelayer"
+          },
+          "persona_pack": {
+            "const": "aidenid-post-incident-auditor"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "chain_id": {
+            "type": "string",
+            "pattern": "^chn_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "actor_class": {
+            "type": "string"
+          },
+          "decision": {
+            "type": "string"
+          },
+          "suspicion_score": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reason": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string"
+          },
+          "input_refs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "narrative": {
+            "$ref": "#/components/schemas/PersonaAuditNarrative"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PersonaAuditListResponse": {
+        "type": "object",
+        "required": [
+          "incidents"
+        ],
+        "properties": {
+          "incidents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonaAuditIncident"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionTokenClaims": {
+        "type": "object",
+        "required": [
+          "iss",
+          "sub",
+          "aud",
+          "resource",
+          "site_id",
+          "grant_id",
+          "chain_id",
+          "permissions",
+          "cnf",
+          "revocation_epoch",
+          "iat",
+          "exp"
+        ],
+        "properties": {
+          "iss": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sub": {
+            "type": "string"
+          },
+          "aud": {
+            "type": "string"
+          },
+          "resource": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "grant_id": {
+            "type": "string",
+            "pattern": "^grt_[A-Za-z0-9_-]+$"
+          },
+          "chain_id": {
+            "type": "string",
+            "pattern": "^chn_[A-Za-z0-9_-]+$"
+          },
+          "permissions": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "llm_brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          },
+          "cnf": {
+            "type": "object",
+            "required": [
+              "jkt"
+            ],
+            "properties": {
+              "jkt": {
+                "type": "string"
+              }
+            }
+          },
+          "revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "iat": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "nbf": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "exp": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionOutcome": {
+        "type": "object",
+        "required": [
+          "decision"
+        ],
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ReasonCode"
+          },
+          "retry_after_seconds": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sandbox_origin": {
+            "type": "string",
+            "format": "uri"
+          },
+          "price_metadata": {
+            "$ref": "#/components/schemas/PriceMetadata"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PriceMetadata": {
+        "type": "object",
+        "required": [
+          "unit",
+          "currency",
+          "amount_micros"
+        ],
+        "properties": {
+          "unit": {
+            "type": "string"
+          },
+          "currency": {
+            "const": "USD"
+          },
+          "amount_micros": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "RoutePolicy": {
+        "type": "object",
+        "required": [
+          "route",
+          "default"
+        ],
+        "properties": {
+          "route": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/VerifierMode"
+          },
+          "strict": {
+            "type": "boolean"
+          },
+          "allowed_purposes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 32,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+            }
+          },
+          "required_permissions": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 64,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "default": {
+            "$ref": "#/components/schemas/DecisionOutcome"
+          },
+          "actors": {
+            "type": "object",
+            "propertyNames": {
+              "$ref": "#/components/schemas/ActorClass"
+            },
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DecisionOutcome"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "IssuerKeyLedgerEntry": {
+        "type": "object",
+        "required": [
+          "issuer",
+          "kid",
+          "jwk_thumbprint_sha256",
+          "alg",
+          "state",
+          "first_seen_at"
+        ],
+        "properties": {
+          "issuer": {
+            "type": "string",
+            "format": "uri"
+          },
+          "kid": {
+            "type": "string"
+          },
+          "jwk_thumbprint_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "alg": {
+            "type": "string",
+            "enum": [
+              "EdDSA",
+              "ES256"
+            ]
+          },
+          "state": {
+            "$ref": "#/components/schemas/TofuState"
+          },
+          "first_seen_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "approved_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "previous_kid": {
+            "type": "string"
+          },
+          "rotation_signed_by_kid": {
+            "type": "string"
+          },
+          "transparency_checkpoint": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "PolicyBundle": {
+        "type": "object",
+        "required": [
+          "version",
+          "site_id",
+          "issued_at",
+          "routes",
+          "revocation_epoch"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "pattern": "^pol_[A-Za-z0-9_-]+$"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "routes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/RoutePolicy"
+            }
+          },
+          "issuer_key_ledger": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IssuerKeyLedgerEntry"
+            }
+          },
+          "revocation_epoch": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "transparency_log_events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "EvidenceBlobReference": {
+        "type": "object",
+        "required": [
+          "uri",
+          "sha256",
+          "byte_size"
+        ],
+        "properties": {
+          "uri": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "byte_size": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "DecisionEvent": {
+        "type": "object",
+        "required": [
+          "id",
+          "request_id",
+          "site_id",
+          "occurred_at",
+          "actor_class",
+          "decision",
+          "reason_codes",
+          "route_template",
+          "method",
+          "path_hash_sha256",
+          "latency_us"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^dec_[A-Za-z0-9_-]+$"
+          },
+          "request_id": {
+            "type": "string"
+          },
+          "site_id": {
+            "type": "string",
+            "pattern": "^sit_[A-Za-z0-9_-]+$"
+          },
+          "occurred_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "actor_class": {
+            "$ref": "#/components/schemas/ActorClass"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/DecisionAction"
+          },
+          "reason_codes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "$ref": "#/components/schemas/ReasonCode"
+            }
+          },
+          "route_template": {
+            "type": "string",
+            "pattern": "^/"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "GET",
+              "HEAD",
+              "POST",
+              "PUT",
+              "PATCH",
+              "DELETE",
+              "OPTIONS"
+            ]
+          },
+          "path_hash_sha256": {
+            "type": "string",
+            "pattern": "^[a-f0-9]{64}$"
+          },
+          "latency_us": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "llm_brand": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[a-z][a-z0-9_-]{0,31}$"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "pattern": "^[a-z][a-z0-9_-]{0,63}$"
+          },
+          "cascade_trace": {
+            "$ref": "#/components/schemas/CascadeTrace"
+          },
+          "evidence": {
+            "$ref": "#/components/schemas/EvidenceBlobReference"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  }
+}
