@@ -54,6 +54,7 @@ export const ROUTE_ACCESS_MANIFEST: readonly RouteAccessEntry[] = [
   { method: "GET", template: "/.well-known/oauth-protected-resource", access: PUBLIC },
   { method: "GET", template: "/v1/mcp/protected-resource-metadata", access: PUBLIC },
   { method: "GET", template: "/v1/mcp/front-door/roadmap", access: PUBLIC },
+  { method: "GET", template: "/.well-known/aidenid-session-jwks.json", access: PUBLIC }, // session-token verification key
 
   // ---- exchange principal: proof-bound; fails closed until AUTH-1 binding exists ----
   { method: "POST", template: "/v1/sessions/exchange", access: EXCHANGE },

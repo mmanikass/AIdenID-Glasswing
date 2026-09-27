@@ -1,0 +1,438 @@
+{
+  "schema_version": "aidenid.control-plane-route-authorization-audit.v2",
+  "observed_at": "2026-07-14T12:48:20Z",
+  "source_sha": "62847cdb239fd178e82b01e0adc244d6fe084577",
+  "candidate_source_sha": "79b5d660bc143408f0def964df56aaaf72a06072",
+  "candidate_contract_sha": "9d0b49b1ff973e72b1360b71f6825eb64ffac2b8",
+  "route_registration_count": 50,
+  "public_route_count": 7,
+  "protected_route_count": 43,
+  "protected_on_source_sha": 10,
+  "unprotected_on_source_sha": 32,
+  "amendments": [
+    {
+      "amended_at": "2026-08-13",
+      "change": "GET /v1/onboarding/target-plan reclassified public -> operator:decision_search; public_route_count 7 -> 6, protected_route_count 42 -> 43.",
+      "reason": "The contract half of this file must track the landed handlers. PR #285 gates this route with requireOperatorRole(decision_search) in adoption.ts, so the 2026-07-14 classification is the older generation. The observational fields above (observed_at, source_sha, protected_on_source_sha, unprotected_on_source_sha) describe the 2026-07-14 baseline and are deliberately UNCHANGED - this amendment records that the policy moved, rather than rewriting what was observed on that date.",
+      "amended_by": "relay"
+    },
+    {
+      "date": "2026-09-27",
+      "change": "Added GET /.well-known/aidenid-session-jwks.json (public): publishes the session-token verification key. Contract relocated from docs/dd/artifacts to apps/control-plane/tests/fixtures so the test is self-contained in the published subset."
+    }
+  ],
+  "public_routes": [
+    {
+      "method": "GET",
+      "template": "/healthz",
+      "access": "public"
+    },
+    {
+      "method": "GET",
+      "template": "/readyz",
+      "access": "public"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/identities",
+      "access": "public"
+    },
+    {
+      "method": "GET",
+      "template": "/.well-known/oauth-protected-resource",
+      "access": "public"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/mcp/protected-resource-metadata",
+      "access": "public"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/mcp/front-door/roadmap",
+      "access": "public"
+    },
+    {
+      "method": "GET",
+      "template": "/.well-known/aidenid-session-jwks.json",
+      "access": "public"
+    }
+  ],
+  "protected_routes": [
+    {
+      "method": "GET",
+      "template": "/v1/onboarding/target-plan",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/targets",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/grants",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/kill-switch",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/kill-switch",
+      "access": "operator:admin"
+    },
+    {
+      "method": "DELETE",
+      "template": "/v1/kill-switch",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/sessions/exchange",
+      "access": "exchange_principal"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/revoke",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/decisions",
+      "access": "service:decision_ingest"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions/search",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions/chain-segment",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions/:id/receipt",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "PATCH",
+      "template": "/v1/decisions/:id/operator-action",
+      "access": "operator:decision_operator"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions/:id/await",
+      "access_any_of": [
+        "service:decision_status",
+        "operator:decision_search"
+      ]
+    },
+    {
+      "method": "GET",
+      "template": "/v1/quarantine/pins",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/decisions/stream",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/operators/reputation",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/operators/reputation/:operatorActorId",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "PUT",
+      "template": "/v1/operators/reputation/:operatorActorId",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/identities/submissions",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/identities/review-notifications",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "PATCH",
+      "template": "/v1/identities/review-notifications/:notificationId",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "PATCH",
+      "template": "/v1/identities/submissions/:submissionId/review",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/persona-audits",
+      "access": "operator:operator_reputation"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/policy-copilot/suggestions",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/usage/meter",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/usage/price-required",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/counterfactuals/enforcement",
+      "access": "operator:decision_search"
+    },
+    {
+      "method": "PUT",
+      "template": "/v1/tenants/:tenantId/quota",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/tenants/:tenantId/quota",
+      "access": "operator:admin"
+    },
+    {
+      "method": "PUT",
+      "template": "/v1/tenants/:tenantId/pricing-plan",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/tenants/:tenantId/pricing-plan",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/billing/rollups",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/billing/rollups",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/billing/exports",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/billing/exports",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/billing/exports/:exportId/delivery-receipt",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/privacy/erase",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/privacy/erasures",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/webhooks/endpoints",
+      "access": "operator:admin"
+    },
+    {
+      "method": "GET",
+      "template": "/v1/webhooks/endpoints",
+      "access": "operator:admin"
+    },
+    {
+      "method": "POST",
+      "template": "/v1/webhooks/signature-preview",
+      "access": "operator:admin"
+    }
+  ],
+  "baseline_unprotected_routes": [
+    "POST /v1/targets",
+    "POST /v1/grants",
+    "GET /v1/kill-switch",
+    "POST /v1/kill-switch",
+    "DELETE /v1/kill-switch",
+    "POST /v1/sessions/exchange",
+    "POST /v1/revoke",
+    "POST /v1/decisions",
+    "GET /v1/decisions",
+    "GET /v1/decisions/:id/receipt",
+    "GET /v1/decisions/:id/await",
+    "GET /v1/quarantine/pins",
+    "GET /v1/decisions/stream",
+    "GET /v1/persona-audits",
+    "POST /v1/policy-copilot/suggestions",
+    "GET /v1/usage/meter",
+    "GET /v1/usage/price-required",
+    "GET /v1/counterfactuals/enforcement",
+    "PUT /v1/tenants/:tenantId/quota",
+    "GET /v1/tenants/:tenantId/quota",
+    "PUT /v1/tenants/:tenantId/pricing-plan",
+    "GET /v1/tenants/:tenantId/pricing-plan",
+    "POST /v1/billing/rollups",
+    "GET /v1/billing/rollups",
+    "POST /v1/billing/exports",
+    "GET /v1/billing/exports",
+    "POST /v1/billing/exports/:exportId/delivery-receipt",
+    "POST /v1/privacy/erase",
+    "GET /v1/privacy/erasures",
+    "POST /v1/webhooks/endpoints",
+    "GET /v1/webhooks/endpoints",
+    "POST /v1/webhooks/signature-preview"
+  ],
+  "baseline_contract_test": {
+    "protected_probes": 42,
+    "public_probes": 7,
+    "missing_guard_failures": 32,
+    "invalid_token_probe": {
+      "route": "POST /v1/targets",
+      "observed_status": 400,
+      "observed_error": "invalid_target",
+      "required_status": 401,
+      "required_error": "invalid_operator_token"
+    },
+    "cross_role_probes": 27,
+    "cross_role_denials_observed": 0,
+    "anonymous_service_touch_count": 15,
+    "anonymous_service_touches": [
+      "killSwitch.current",
+      "store.listDecisions",
+      "store.getDecision",
+      "store.latestDecisionOutboxSeq",
+      "store.getDecision",
+      "store.listQuarantinePins",
+      "store.listDecisionOutboxAfter",
+      "personaAudit.list",
+      "store.listDecisions",
+      "store.listDecisions",
+      "store.getTenantQuota",
+      "store.getTenantPricingPlan",
+      "store.listBillingExports",
+      "store.listPrivacyErasures",
+      "store.listWebhookEndpoints"
+    ]
+  },
+  "candidate_contract_test": {
+    "test_groups": 10,
+    "test_groups_passed": 10,
+    "manifest_entries": 49,
+    "manifest_exact_artifact_match": true,
+    "public_probes": 7,
+    "protected_probes": 42,
+    "anonymous_denials_before_handler": 42,
+    "anonymous_service_touch_count": 0,
+    "authenticated_cross_principal_denials": 190,
+    "intermediate_service_to_operator_leaks_found": 21,
+    "intermediate_service_to_operator_leaks_remaining": 0,
+    "environment_registry_shapes_verified": [
+      "array",
+      "object"
+    ],
+    "mixed_principal_entries_rejected": true,
+    "transitional_operator_ingest_default": "disabled",
+    "unknown_route_result": "403 route_not_authorized",
+    "missing_registry_result": "503 operator_auth_not_configured",
+    "control_plane_suite": {
+      "files_passed": 4,
+      "tests_passed": 68
+    }
+  },
+  "service_auth_current_state": {
+    "transport": "Authorization bearer token from AIDENID_CONTROL_PLANE_API_KEY",
+    "secret_source": "operator-tokens Secrets Manager JSON field verifier_control_plane_api_key",
+    "production_startup_requires_key": true,
+    "current_principal_kind": "operator",
+    "current_roles": [
+      "decision_operator",
+      "decision_search"
+    ],
+    "required_principal_kind": "service",
+    "required_roles": [
+      "decision_ingest",
+      "decision_status"
+    ],
+    "service_routes": [
+      "POST /v1/decisions",
+      "GET /v1/decisions/:id/await"
+    ],
+    "await_operator_alternative": "operator:decision_search",
+    "secret_material_recorded": false
+  },
+  "activation_state": {
+    "source_guard_flag": "AIDENID_ROUTE_ACCESS_GUARD_ENABLED",
+    "source_transitional_flag": "AIDENID_ROUTE_ACCESS_ALLOW_TRANSITIONAL",
+    "service_principal_override_env": "AIDENID_OPERATOR_SERVICE_PRINCIPALS",
+    "service_principal_override_contains_token_material": false,
+    "guard_source_default": "disabled",
+    "production_guard_activation_verified": false,
+    "startup_manifest_coverage_required": true,
+    "startup_manifest_coverage_candidate_verified": true,
+    "waf_must_remain_until_activation_and_canaries": true
+  },
+  "containment": {
+    "waf_web_acl": "aidenid-clearance-production-waf",
+    "rules": [
+      {
+        "name": "emergency-block-dashboard-decision-stream-20260714",
+        "match": "host dashboard.aidenid.com AND uri exactly /api/decisions/stream",
+        "anonymous_probe_status": 403
+      },
+      {
+        "name": "emergency-block-public-clearance-v1-20260714",
+        "match": "host clearance-api.aidenid.com AND uri starts /v1/",
+        "anonymous_probe_status": 403
+      }
+    ],
+    "live_lock_token": "c7e78a45-13f8-477c-ae12-d8eead44a419",
+    "update_payload_sha256": "fd9cca49a3ea97eb1485168ae95b9070b60bed8998a7df83b677a1fd5e860d27",
+    "terraform_adoption_pr": 262,
+    "remove_only_after": [
+      "deny-by-default route authorization is deployed",
+      "anonymous and invalid-token production canaries deny without state access",
+      "verifier decision ingest succeeds with service-only credentials",
+      "proof-bound session exchange succeeds with an authenticated matching principal"
+    ]
+  },
+  "session_exchange_required_controls": [
+    "persist subject organization and project on each grant",
+    "persist a pre-registered proof-key thumbprint on each grant",
+    "derive auth context through bounded fixed-origin AIdenID introspection, not caller identity headers",
+    "compute RFC 7638 thumbprint from submitted dpop_jwk",
+    "require the computed thumbprint to match the grant-bound proof key",
+    "verify grant organization and project match authenticated principal",
+    "inject a stable KMS-backed session signer shared across replicas",
+    "fail closed until every control is present"
+  ]
+}

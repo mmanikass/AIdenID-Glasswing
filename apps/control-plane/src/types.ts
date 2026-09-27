@@ -1,7 +1,21 @@
+import type { KeyObject } from "node:crypto";
+
 import type { AgentIdentityPurpose, CascadeTrace, CascadeTraceLayer, DecisionAction } from "@aidenid/common-schemas";
 import type { OutboxPublisher } from "@aidenid/eventing";
 
 export type MaybePromise<T> = T | Promise<T>;
+
+/**
+ * The key that signs session tokens issued by /v1/sessions/exchange. Its public JWK is what
+ * a verifier must hold under `sessionTokenPublicJwksByIssuer[issuer]`; without it no verifier
+ * can validate a real exchanged session. Published at /.well-known/aidenid-session-jwks.json.
+ */
+export interface SessionSigner {
+  readonly kid: string;
+  readonly alg: "EdDSA";
+  readonly privateKey: KeyObject;
+  readonly publicJwk: Readonly<Record<string, unknown>>;
+}
 
 export interface TargetRecord {
   readonly id: string;
@@ -616,4 +630,5 @@ export interface ControlPlaneServices {
   readonly decisionReceipts: DecisionReceiptIssuer;
   readonly issuer: string;
   readonly sessionTtlSeconds: number;
+  readonly sessionSigner: SessionSigner;
 }
