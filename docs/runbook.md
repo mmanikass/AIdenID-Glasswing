@@ -17,7 +17,7 @@ Conventions:
 2. Health: `GET SITE/healthz` → `{ "status": "ok", "site_id": "sit_glasswing_demo" }`. `GET CP/healthz` → `{ "ok": true }`. `GET http://127.0.0.1:3000/api/status/health` → `{ "state": "connected" }`.
 3. Keys: `GET CP/.well-known/aidenid-session-jwks.json` returns the control plane's public Ed25519 key with its `kid`. The site's verifier trusts exactly that key, so a judge can see which key every session token is checked against.
 4. At startup the site registered its target on the control plane (`sit_glasswing_demo`, tenant `ten_glasswing_demo`, origin `https://aidenid.local`) and loaded its policy: `GET /catalog` and `POST /items/:id/reserve` allow a verified agent that holds the matching permission; `GET /customers/export` is denied for every actor class; `GET /reports/bulk` allows a verified agent with `reports:bulk` and a stated purpose, then hands the request to Jev; every other path is denied by a catch-all. There is nothing to register by hand.
-5. Open the console. Expect the heading **Operations console**, the note `Protected site: http://127.0.0.1:4100`, and the banner **"Live: every outcome below is recorded by the control plane and the protected site."** With login disabled the page issues its own loopback-only session cookie (`aidenid_operator_token`, 8 h) through `/api/glasswing/session`; it refuses off loopback or when `AIDENID_REQUIRE_LOGIN` is on. If the banner says the operator API is not reachable, see "If something fails".
+5. Open the console. Expect the heading **Operations console**, the note `Protected site: http://127.0.0.1:4100`, and the banner **"Live: every outcome below is recorded by the control plane and the protected site."** With login disabled the page issues its own session cookie (`aidenid_operator_token`, 8 h) through `/api/glasswing/session`. That route is enabled only by the launcher flag `AIDENID_DASHBOARD_DEV_SESSION` and refuses without it, off loopback, or when `AIDENID_REQUIRE_LOGIN` is on. If the banner says the operator API is not reachable, see "If something fails".
 
 ## Beat 1 — Mint an agent
 
@@ -77,7 +77,8 @@ Restarting `pnpm dev` is the reset. Targets, grants, sessions, decisions, outbox
 ## If something fails
 
 - Banner **"The Glasswing operator API is not reachable: …"**: the site is down, or the dashboard is missing `AIDENID_PROTECTED_SITE_URL`, `AIDENID_OPERATOR_TOKEN` or `AIDENID_DASHBOARD_OPERATOR_REQUEST_TOKEN` (`pnpm dev` sets them). Check `GET SITE/healthz`, restart `pnpm dev`, reload.
-- Banner **"Login is required on this dashboard…"**: `AIDENID_REQUIRE_LOGIN` is on, so the loopback session shortcut is disabled. Run the local profile.
+- Banner **"Login is required on this dashboard…"**: `AIDENID_REQUIRE_LOGIN` is on, so the dev session is disabled. Run the local profile (`pnpm dev`).
+- Console stuck on **"The Glasswing operator API is not reachable: dev_session_disabled"**: the dashboard was started without `AIDENID_DASHBOARD_DEV_SESSION=true`; `pnpm dev` sets it, a hand-started dashboard must too.
 - Banner **"No live control plane configured…"**: the dashboard has no `AIDENID_CONTROL_PLANE_URL`; start `pnpm dev`.
 - **Error: unsupported_permission_scope** when issuing a grant: one permission per grant; pick one scope.
 - **Error: grant_forbidden** on a run: the selected grant belongs to a different agent; select the agent that owns it.
