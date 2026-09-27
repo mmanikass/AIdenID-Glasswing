@@ -1,0 +1,20 @@
+# SUBMITTED — this file was filed as https://github.com/glasswingvc/test-flight-2026/pull/5 at 11:14 UTC on 27 Sep 2026
+# (validate check green). Edits until 14:00 ET go to that PR (branch submission/aidenid-glasswing on the mrrCarter fork).
+# The file name must match the slug. Members: real names and GitHub handles only, no emails/phones.
+
+team_name: "AIdenID"
+slug: "aidenid-glasswing"
+
+members:
+  - name: "Carther Theogene"
+    github: "mrrCarter"
+
+repo: "https://github.com/mrrCarter/AIdenID-Glasswing"
+
+description: "Glasswing is a live operations console for sites that AI agents call: mint an agent, assign it scoped work, get one deterministic decision with a signed receipt per request, escalate only ambiguous actions to a bounded semantic check, and revoke so the next request is refused."
+
+customer: "The security or platform owner of a website or API that AI agents call, who needs scoped delegation, per-request decisions with verifiable receipts, and revocation that actually stops the next request."
+
+live_url: ""
+
+prior_work: "The first commit on main, `prior work`, is a byte-identical subset (268 files, nine workspace packages plus root build files) of our private aidenid-clearance repository at commit 0e4553e from 14 August 2026: the policy engine, crypto, control-plane, verifier middleware, outbox, transparency and operator dashboard. Two more files from that same commit were added byte-identical in the foundation PR (docs/api/openapi.json, since edited during the weekend, and docs/dd/artifacts/cascade-latency-2026-05-02.json). Everything else after the first commit (workspace prune, revocation fixes and effect gate, JEV, agent client, session signer, the protected site with the operator API, the Glasswing console, launcher, tests, README and runbook) was written during the weekend. The Senti CLI/API used by the builders to coordinate is a pre-existing tool, not shipped code."
