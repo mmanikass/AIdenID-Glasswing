@@ -73,6 +73,8 @@ pnpm test
 pnpm dev
 ```
 
+All five commands pass locally on `main` at `2107663` (every weekend PR merged): frozen install, typecheck, 64 test files / 465 tests, lint and secret scan. Hosted CI does not run on this account, so that is local evidence, not a CI claim; per-PR details are in `docs/aidenid-build/evidence/PR-00-navigator.md`.
+
 `pnpm dev` builds the workspace and starts three loopback listeners with ephemeral state and login disabled: the protected site on http://127.0.0.1:4100, its embedded control plane on http://127.0.0.1:4000, and the dashboard on http://127.0.0.1:3000. The Glasswing console is http://127.0.0.1:3000/glasswing. The launcher generates the operator token and the dashboard request token per run and never prints them; details, the full environment contract and the fallback when the site is not built are in `docs/aidenid-build/LOCAL_DEVELOPMENT.md`. The exact click path for the demo is in `docs/runbook.md`.
 
 Optional environment, all server-side:
