@@ -73,7 +73,7 @@ pnpm test
 pnpm dev
 ```
 
-All five commands pass locally on `main` at `2107663` (every weekend PR merged): frozen install, typecheck, 64 test files / 465 tests, lint and secret scan. Hosted CI does not run on this account, so that is local evidence, not a CI claim; per-PR details are in `docs/aidenid-build/evidence/PR-00-navigator.md`.
+`main` at `2107663` (every weekend PR merged) passes locally: frozen install, typecheck, 64 test files / 465 tests, lint, secret scan. Hosted CI does not run on this account, so that is local evidence, not a CI claim; per-PR details are in `docs/aidenid-build/evidence/PR-00-navigator.md`.
 
 `pnpm dev` builds the workspace and starts three loopback listeners with ephemeral state and login disabled: the protected site on http://127.0.0.1:4100, its embedded control plane on http://127.0.0.1:4000, and the dashboard on http://127.0.0.1:3000. The Glasswing console is http://127.0.0.1:3000/glasswing. The launcher generates the operator token and the dashboard request token per run and never prints them; details, the full environment contract and the fallback when the site is not built are in `docs/aidenid-build/LOCAL_DEVELOPMENT.md`. The exact click path for the demo is in `docs/runbook.md`.
 
@@ -92,7 +92,7 @@ Keep every key in `.env`, never in this repository, chat, logs or a client bundl
 
 The first commit on `main`, `prior work` (`47a68878abbcdcdb53376a26d5f55ea6f080d928`), is a byte-identical subset of the owner's private `aidenid-clearance` repository at commit `0e4553e39e68b50aecbd977544f95d40c4e03de7` (committed 14 August 2026): nine workspace packages (`common-schemas`, `crypto`, `eventing`, `policy-engine`, `transparency`, `fingerprint-sidecar`, `verifier-node`, `control-plane`, `dashboard`) plus the root build files, 268 files in total. Every file in that commit matches its source blob hash; no git history was imported.
 
-Two more pre-weekend files were added later in the merged foundation (PR #7), byte-identical from the same source commit: `docs/api/openapi.json` and `docs/dd/artifacts/cascade-latency-2026-05-02.json`.
+Two more pre-weekend files were added later in the merged foundation (PR #7), byte-identical from the same source commit when added: `docs/api/openapi.json`, which was then edited during the weekend to add the Jev reason codes (PR #9), and `docs/dd/artifacts/cascade-latency-2026-05-02.json`, which is unchanged.
 
 Everything else after the first commit was written during Test Flight weekend (27 September 2026): the foundation itself (workspace prune, local dev runbook, gates), the revocation fixes and effect gate (`withChainAuthority`), `@aidenid/jev`, `@aidenid/agent-client`, the injectable session signer and JWKS route, operator site scopes on the control plane, the protected site with the Glasswing operator API, the kernel end-to-end test, the Glasswing console, the demo launcher, this README and the runbook.
 
