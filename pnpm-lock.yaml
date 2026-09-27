@@ -104,68 +104,6 @@ importers:
         specifier: ^19.2.3
         version: 19.2.3(@types/react@19.2.14)
 
-  apps/demo-portal:
-    dependencies:
-      '@aidenid/authorized-benchmark':
-        specifier: workspace:*
-        version: link:../../lab/authorized-benchmark
-      '@aidenid/control-plane':
-        specifier: workspace:*
-        version: link:../control-plane
-      '@aidenid/eventing':
-        specifier: workspace:*
-        version: link:../../packages/eventing
-      '@aidenid/fingerprint-sidecar':
-        specifier: workspace:*
-        version: link:../../packages/fingerprint-sidecar
-      '@aidenid/operator-reputation':
-        specifier: workspace:*
-        version: link:../../packages/operator-reputation
-      '@aidenid/policy-engine':
-        specifier: workspace:*
-        version: link:../../packages/policy-engine
-      '@aidenid/registry':
-        specifier: workspace:*
-        version: link:../../packages/registry
-      '@aidenid/verifier-node':
-        specifier: workspace:*
-        version: link:../../packages/verifier-node
-
-  apps/verifier:
-    dependencies:
-      '@aidenid/crypto':
-        specifier: workspace:*
-        version: link:../../packages/crypto
-      '@aidenid/fingerprint-sidecar':
-        specifier: workspace:*
-        version: link:../../packages/fingerprint-sidecar
-      '@aidenid/operator-reputation':
-        specifier: workspace:*
-        version: link:../../packages/operator-reputation
-      '@aidenid/policy-engine':
-        specifier: workspace:*
-        version: link:../../packages/policy-engine
-      '@aidenid/verifier-node':
-        specifier: workspace:*
-        version: link:../../packages/verifier-node
-
-  apps/workers:
-    dependencies:
-      '@aidenid/eventing':
-        specifier: workspace:*
-        version: link:../../packages/eventing
-      '@aidenid/verifier-node':
-        specifier: workspace:*
-        version: link:../../packages/verifier-node
-
-  lab/authorized-benchmark:
-    dependencies:
-      '@aidenid/common-schemas':
-        specifier: workspace:*
-        version: link:../../packages/common-schemas
-
-  lab/cascade-latency: {}
-
   packages/common-schemas:
     dependencies:
       zod:
@@ -174,19 +112,9 @@ importers:
 
   packages/crypto: {}
 
-  packages/edge-adapter-cloudflare: {}
-
-  packages/edge-adapter-fastly: {}
-
   packages/eventing: {}
 
   packages/fingerprint-sidecar: {}
-
-  packages/operator-reputation:
-    dependencies:
-      '@aidenid/verifier-node':
-        specifier: workspace:*
-        version: link:../verifier-node
 
   packages/policy-engine:
     dependencies:
@@ -196,12 +124,6 @@ importers:
       zod:
         specifier: ^4.3.6
         version: 4.3.6
-
-  packages/registry:
-    dependencies:
-      '@aidenid/crypto':
-        specifier: workspace:*
-        version: link:../crypto
 
   packages/transparency: {}
 

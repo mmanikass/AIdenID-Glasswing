@@ -1,0 +1,303 @@
+# Source provenance
+
+The public repository's initial prior work commit (47a68878abbcdcdb53376a26d5f55ea6f080d928) imported a 268-file starter subset from source commit 0e4553e39e68b50aecbd977544f95d40c4e03de7. The selected files were byte-identical at import; the Git blob IDs matched and this SHA-256 manifest records their source contents. No source Git history was imported. PR-1 scaffold files are authored separately and are not represented in this import manifest.
+
+The subset contains the seven shared/runtime packages, the control plane and dashboard apps, and selected root build/configuration files. It omits lab/demo-portal content and source files that are not part of the starter contract. The initial import was secret-scanned before publication.
+
+## Prior-work fixtures added after the baseline commit
+
+These two public contract/test fixtures are additional byte-identical copies from the same source commit. Their Git blob IDs were verified locally against Fable's supplied hashes; they are not counted among the 268 files in the initial import commit.
+
+| Destination path | Source Git blob | SHA-256 |
+| --- | --- | --- |
+| `docs/api/openapi.json` | `9f15d8651a171266393d3677a5a3d2116215a9ba` | `dff8d37b44f4ad5c6d9abc7843c21a6c89de77ee4e3401e3958c731c4ca5d7e2` |
+| `docs/dd/artifacts/cascade-latency-2026-05-02.json` | `d085b50de2bfe3f17e515b6f98e7acd8b874ab47` | `7ae61bca8da7fe0b4e3f568480a9b6b5ebb47272b9195888fc6437168c45306d` |
+
+## Subset test exclusions
+
+The following source suites reference assets intentionally omitted from the starter subset. They are excluded by `vitest.config.ts`; each reason reflects a local test failure caused by the missing fixture/tree, not a passing result for the omitted behavior.
+
+| Test file | Omitted dependency |
+| --- | --- |
+| `apps/control-plane/tests/route-authorization.test.ts` | DD route-authorization artifact; contract is relocated by PR #5. |
+| `packages/transparency/tests/dashboard-deploy-summary.test.ts` | `scripts/verify-dashboard-deploy-summary.mjs`. |
+| `packages/transparency/tests/dashboard-live-canary.test.ts` | `scripts/check-dashboard-live.mjs`. |
+| `packages/transparency/tests/evidence-pack.test.ts` | DD evidence pack files and supporting scripts. |
+| `packages/transparency/tests/release-manifest.test.ts` | `.github/workflows/release.yml`. |
+| `packages/transparency/tests/service-image-content.test.ts` | `scripts/verify-service-image-content.mjs`. |
+| `packages/transparency/tests/terraform-infra.test.ts` | Terraform infrastructure and deployment workflow tree. |
+| `packages/transparency/tests/workflow-hardening.test.ts` | Production workflows, scripts, and service Dockerfiles outside the subset. |
+| `packages/verifier-node/tests/omar-gate-template.test.ts` | Reusable Omar Gate workflow and caller evidence artifacts. |
+
+These suites can be re-enabled when their reviewed support assets are deliberately added to the starter scope.
+
+| Source path | SHA-256 at import |
+| --- | --- |
+| `.gitignore` | `3ee5bf23fa7e9922f6d0ddfe4458e6c0c604196ae6de48bc9448b414dc8b09f9` |
+| `apps/control-plane/certs/rds-global-bundle.pem` | `e5bb2084ccf45087bda1c9bffdea0eb15ee67f0b91646106e466714f9de3c7e3` |
+| `apps/control-plane/Dockerfile` | `1ff72af25ea3df2604fb22da1f8235b498f4755914170b979de178979059f225` |
+| `apps/control-plane/migrations/0001_control_plane.sql` | `a86b0b6331934a063f48d82b54e7b26334ca026b82a78e77fc057b9c17069f52` |
+| `apps/control-plane/migrations/0002_adoption_controls.sql` | `c26f82b013993b25b236073560a31a546dc776f7a84e38fab4b15aa188a3eb53` |
+| `apps/control-plane/migrations/0003_decisions_outbox.sql` | `362149dc22e24d33eac9101291e142b440248edbb4864b8788844e4350636520` |
+| `apps/control-plane/migrations/0004_decision_reason_codes.sql` | `c28829a90680d5178350f94ffc004a3c44c1e6bce9c87599b8e71fd9b1447c0d` |
+| `apps/control-plane/migrations/0005_decision_operator_actions.sql` | `a37938add8a3c757930602ef31dc0b86c544bd2b601bcc102d1162153387c8b9` |
+| `apps/control-plane/migrations/0006_quarantine_price_insights.sql` | `89c0c36185422c92d59a890337c6b5ab15abee3730ff15c94d85b9ff4cba5fde` |
+| `apps/control-plane/migrations/0007_llm_brand_decisions.sql` | `80fbdf9b0047a4a2fc869310830c3e60136f5f1b4eca9efc1598be91b23d45b8` |
+| `apps/control-plane/migrations/0008_decisions_search_indexes.sql` | `e78687e9a820fb6f689623f94d35589ccab721d6200f02322e9786232b29174e` |
+| `apps/control-plane/migrations/0009_operator_reputation.sql` | `118b19ab90bf952627ef7083b05c64e1801d22f25a38d8f2d3e7e7c63771a474` |
+| `apps/control-plane/migrations/0010_decisions_search_index_expansion.sql` | `fa50b61233b8b7e40e8f80e355b607e163711ad1f9b3206ef2a9374a63717f0b` |
+| `apps/control-plane/migrations/0011_decisions_search_compound_indexes.sql` | `7e2df7e39b094df62adadaed58175e2d6fb33599e6831ad3ea10ddd89eb004d2` |
+| `apps/control-plane/migrations/0012_decision_cascade_trace.sql` | `78c5a066c75045c1183ed501a3ee054e5f42272bfd68573dda7a26d7286f357e` |
+| `apps/control-plane/migrations/0013_decision_receipts.sql` | `ee052424e041d45223158e258548384798e10b0a60815dbe00d1408ee4e387b3` |
+| `apps/control-plane/migrations/0014_billing_meter.sql` | `212613e1c0a8b6fc0af438be7513fb409e6b792358bcded8851e1b6870f4f486` |
+| `apps/control-plane/migrations/0015_decision_outbox_chain_receipt_keys.sql` | `41b5003a71a59147573c2d153ce4c8ab825116931a30bfc934adfa3ee0bb5c66` |
+| `apps/control-plane/migrations/0016_decision_receipt_key_active_uniqueness.sql` | `c6ee8dc8da7ab77ed8df15d7a7bd20d2ba43939baf64a377a5e894c72bd20181` |
+| `apps/control-plane/migrations/0017_billing_exports.sql` | `f6c741d7db042179b19d15493b3f0313fe9e2e3ae962cf2d736def32314b3fc3` |
+| `apps/control-plane/migrations/0018_billing_export_delivery_receipts.sql` | `055e60f6a5fbb0efc7713460ccf24f49b1fe6e8c8d207a78f5a52ee4c16dee0b` |
+| `apps/control-plane/migrations/0019_decision_purpose.sql` | `25682ea78bf5f9116c64ce891337728cac4fc7b4e7bf9f2d3da3255111674869` |
+| `apps/control-plane/migrations/0020_agent_identity_submissions.sql` | `d8efb4285b2d13d7aa5ab674187c49a4f8c5337b136f4baabf66ccae61407b90` |
+| `apps/control-plane/migrations/0021_agent_identity_submission_reviews.sql` | `930204d72547b3f01fb8410dab8530ff26c99cef16948abc660824870d00ebec` |
+| `apps/control-plane/migrations/0022_agent_identity_review_notifications.sql` | `7872aac51df16bb00094de1c2eae98bdc0bc1c84b998f734e96922463a19d94f` |
+| `apps/control-plane/migrations/0023_operator_reputation_defaults.sql` | `345127d3e096f7426ae244f7b8f0a6e7b5d5edc4120c9fa5f56ea96fe36349cb` |
+| `apps/control-plane/migrations/0024_agent_identity_requested_access_duration.sql` | `d5bfecd0624fc0d21dde4aa72d0347c5bae764c6b62f72f73627733f264725c9` |
+| `apps/control-plane/migrations/0025_operator_reputation_expiry.sql` | `6842c1b9d474268daa26acc06c27cb11e5ba93e44b5668e9c9012f22fdb6945c` |
+| `apps/control-plane/migrations/0026_grant_issuer_actor.sql` | `da83ae76dcbbab80e3edf56e645f119e74c6dc67eab6d2737efa1e287312e555` |
+| `apps/control-plane/package.json` | `bc3a3bf95d4049778b907948c2b9eb7c6137e54ea7b43c094faf548adb70eea9` |
+| `apps/control-plane/src/app.ts` | `e83700d4a07d3abe2d0b97eadf2337deaf6f21ce4ff770cd6215e19818e3ca95` |
+| `apps/control-plane/src/authActivationCanaryCli.ts` | `cd952b50b0a2da42d9031b94793c25e00cf9115271f286f7ba7d1b65c9337604` |
+| `apps/control-plane/src/canaries/authActivation.ts` | `94b2a286b931b0fc63b336972fe8748089f62585c55a1e77262997f79a5b9500` |
+| `apps/control-plane/src/ids.ts` | `4dc8a50d173938f49f3550bdb21428cd5ddaf00289b8ff19ddd10b6be4ddefa5` |
+| `apps/control-plane/src/index.ts` | `9c7808d0265654e9e27246b1cd4dfc365d30b647f5f91639a4e8f314bef6e241` |
+| `apps/control-plane/src/migrations.ts` | `9adb8764f3bb4daaeaa8ea378829bce28e4414ebf7c5ba899974fd51af020701` |
+| `apps/control-plane/src/plugins/correlation.ts` | `d4bdd28d7b949b8c7e4cda9db2a2a9f396a67b3b03fba8eaa3ee8384dd875826` |
+| `apps/control-plane/src/plugins/operatorAuth.ts` | `750361755922e118bcf5cc661c3fbd3a4ed633fa41950fb6dd3f7d299d65b51a` |
+| `apps/control-plane/src/plugins/routeAccessGuard.ts` | `c52e3274a51718d413715d53ea5296f61f2ff47d6f7b48d5f4eeb33691237c8d` |
+| `apps/control-plane/src/plugins/routeAccessManifest.ts` | `7a4b85da59cf0767a83f394ecdc7ca7075e9473fd5e9df04b4c75e616d519f8e` |
+| `apps/control-plane/src/redisStreamsClient.ts` | `3a7ee7e23a09728de45784b352e99620df13fcba36a2d668b95023aa9992caf4` |
+| `apps/control-plane/src/routes/adoption.ts` | `a38d4c7d6707eee930a3613db2c0dcb8692cd78446867c06c1ad10e14e621055` |
+| `apps/control-plane/src/routes/decisions.ts` | `1b260c8ac7b7daeb58e6e023e84451613558ddb539e09a5f058ad4944afb61c0` |
+| `apps/control-plane/src/routes/grants.ts` | `5ef20a032a5fc49ac4e1b1de246c78574796740964d94da9367dad39a435cf3f` |
+| `apps/control-plane/src/routes/identities.ts` | `42933bbafc0d3d6b30f6b34a1302f20b2e64e3600c326bafd6057f6329de80c0` |
+| `apps/control-plane/src/routes/killSwitch.ts` | `0f3b84b3adab414581010daf6f15bfba044acd8083063af170e95f5ccf2b86be` |
+| `apps/control-plane/src/routes/operators.ts` | `134bce2aa7736d9c3e5f33cc396c771f6c2df33ec1e60f8b24b1e4e3a8709ed9` |
+| `apps/control-plane/src/routes/personaAudits.ts` | `b544d3ee8cfc0fce1a21de80e292bca04bcfda830f99239925aff876a8fdbeab` |
+| `apps/control-plane/src/routes/policyCopilot.ts` | `80cb030225c2f94c374ff61be79ccaf6b2688dd8bca6a037acacceee6ea9455d` |
+| `apps/control-plane/src/routes/revoke.ts` | `2e5da8708a2c4aeb84c251f93a7999667c8be768865ef97c13601bb6b9c86023` |
+| `apps/control-plane/src/routes/sessions.ts` | `fa9b832712bba162d60ec320b8befb3fb5c60c829fcfab9f340cb839b610ac8f` |
+| `apps/control-plane/src/routes/targets.ts` | `50c0204979dab2106499612df8145a9272f37db15a7e32d1aea23c280b5cb229` |
+| `apps/control-plane/src/services/adoption.ts` | `43800347e07224f4d0ba5ca2326015302ba87560508edad90df82318ed80b43e` |
+| `apps/control-plane/src/services/decisionReceipts.ts` | `ae21a62f64cad263eb924612edad5b25703c4cac05f5644f2ae853aa97580737` |
+| `apps/control-plane/src/services/killSwitch.ts` | `488b928521c1241d170df85d4ceb3e2c3bfb51bbef58bec7d7a0eb80ce301c13` |
+| `apps/control-plane/src/services/personaAudit.ts` | `ec4b132564608b62ca8cd3f5315d7884e04ddaa8702722ec07cbcff62824c98c` |
+| `apps/control-plane/src/services/revocation.ts` | `76140cdde4dd397efb4c055fc0dbf55cf29885f366e5c3c3c52dc6fc0106d0d6` |
+| `apps/control-plane/src/services/store.ts` | `be0bc436ee0c748420f001da77f3d9a473a3d9f9a9c099a2909fe9f442068800` |
+| `apps/control-plane/src/services/webhookSecrets.ts` | `dbbd9454d8f0b048c9dc3015dacf7bff0c0f9f1051f9d3c13723949c3efe75aa` |
+| `apps/control-plane/src/start.ts` | `ba68ee3177e8edc2c0a3c01815e9adbb126164e1f5f65dd6badcae46161c012b` |
+| `apps/control-plane/src/types.ts` | `cfd61518269d3e9b3b3f444be77a8bdba3a3f0dc6b31c36fc63d4337ac428dac` |
+| `apps/control-plane/tests/auth-activation-canary.test.ts` | `e9fe6cd855e63478ae2ad0c7dc3cc5402527275b0b22f374ce69323afe70ea42` |
+| `apps/control-plane/tests/control-plane.e2e.test.ts` | `0ed3fdad154bc8ad46f3d5e6dd942c87cbae364281f458bdca5309e99e4e2871` |
+| `apps/control-plane/tests/guard-off-authorization.test.ts` | `ff19524370f288ef340a1a870db9daf20b60af333c0fa728018b52020cf3a0d1` |
+| `apps/control-plane/tests/revocation.test.ts` | `920cec6c1471b6b198d185a647597cc36e8380f335ba941eb501e4361da04adf` |
+| `apps/control-plane/tests/route-authorization.test.ts` | `680ea30c02d7a8431521092641f1a6cf571c642d67a4acb25896f693c5b03977` |
+| `apps/control-plane/tests/service.test.ts` | `781654ef9f9add7a6e440803988f3df0ed14623a94ec084a0ab0276c6f7158f4` |
+| `apps/control-plane/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `apps/dashboard/Dockerfile` | `54b5e72555e379ec9bdea68ecc7a8519012b46e4f00f51c593b63d98c8699308` |
+| `apps/dashboard/next-env.d.ts` | `85ae5aee75f011967cf2d25cbc342f62d69314e9d925f7f4aa3456fc2cffcca6` |
+| `apps/dashboard/next.config.mjs` | `5ca4457f13cb7497b751afcec035845992fb45ee71a55345c9cde90d95741a83` |
+| `apps/dashboard/package.json` | `6f652d2194f50bb6f6e0fc89bf444c0704c0bed37daf9e71d9ddbe82539ec0f6` |
+| `apps/dashboard/src/app/api/decisions/[decisionId]/operator-action/route.ts` | `914c7355e4c643e8b709cfb42cb2a7f5412de478d5be08b22e1b8f5deba24521` |
+| `apps/dashboard/src/app/api/decisions/search/route.ts` | `10c0ea7695cc836bb240a9e84c18e9fe5814e8a883312e59a3ad015f418ed58d` |
+| `apps/dashboard/src/app/api/decisions/stream/route.ts` | `f00326a6f94f49475933517ca2adea26d5d34286828f185b9f4598a3e8e85c5b` |
+| `apps/dashboard/src/app/api/identity-challenges/[submissionId]/review/route.ts` | `618dfee121eefca734d55230a9b085330989f77f2eefc9fbd6b9ba3a4cbd619e` |
+| `apps/dashboard/src/app/api/operators/reputation/[operatorActorId]/route.ts` | `b1d3e2da1e71cc61618c8434fae540923bdf301e6172472d52d096328896c78b` |
+| `apps/dashboard/src/app/api/operators/reputation/route.ts` | `56049a709e653eda577e7c7a2561faaec46e00c4d2cc0bf05ca04efffac70a5a` |
+| `apps/dashboard/src/app/api/policy/preview/route.ts` | `1c3e6790bf17fd12be8c92305ef9977e9c8d1bd09b9278c97e42a7ffda131b39` |
+| `apps/dashboard/src/app/api/status/route.ts` | `c00a7c99e032acfc7024e307837345bce2d7e43c3f776f0f1ae5d52b753b040b` |
+| `apps/dashboard/src/app/auth/callback/route.ts` | `e6d793b40f893aa26421471d9791466ad8a5c709a3a9a0115edcde3e4588da24` |
+| `apps/dashboard/src/app/auth/logout/route.ts` | `d4635f667cb8ce09a4206a6daf8754675b11c5de6039277adb52e6c4dddb2b0f` |
+| `apps/dashboard/src/app/auth/start/route.ts` | `0ce6c5909821912688daa767ee7dfdbd2b3881944a4f809e35e46b8a80b39f87` |
+| `apps/dashboard/src/app/error.tsx` | `f2205b81fe13b90023efe67c9a917a180f7efbf5c5700eaf3d62deeb36398bfc` |
+| `apps/dashboard/src/app/globals.css` | `59a486fc24fbf3a93e135477de4c111f87be993c2383d7ada75f6d83f5558edd` |
+| `apps/dashboard/src/app/icon.svg` | `51005314a05c62bca131d8ec57d2e2d7444ab17a36cdac81535de50f17bf6c2b` |
+| `apps/dashboard/src/app/layout.tsx` | `da1e1664466a7b9535fed814ec2cc952eca0b36df8bff7216cb7b8521d6ca7fa` |
+| `apps/dashboard/src/app/login/page.tsx` | `5119fc6f9c654380681497f2475f9a191dbaf8ae9f6daa8080e9218c3751ab6d` |
+| `apps/dashboard/src/app/operators/page.tsx` | `2d90958e0f6aca74e93fee4a8a9acf424ff3b8fd2b89789d31ef6887e714ca6c` |
+| `apps/dashboard/src/app/page.tsx` | `39abc4e83fb7f7c143cd2bb829f9ef245a69dfb3153e9302e351b45f0cb3fd07` |
+| `apps/dashboard/src/app/policy/page.tsx` | `bcf45e97bb4fb92e4f6a05bb781572d043f436f780df474f405527a8faffc651` |
+| `apps/dashboard/src/auth/constants.ts` | `2d375164ae868f49d8f975e2993a866b1c5e96d351b60077fe043138cd06105f` |
+| `apps/dashboard/src/auth/session.ts` | `17bb233d9e6946c57e744bfc01a5ad10eb4578bc1821f4e14dfd3ef8ae0ff0a5` |
+| `apps/dashboard/src/auth/ssoState.ts` | `f723e8fdce9fc029520a8326c4d0efabd0d54071742731ffa54f3b358ad175e2` |
+| `apps/dashboard/src/auth/upstreamFetch.ts` | `07463e98683cff1ab18b733403b8540929fee01002bd387b78a95dbba09d5490` |
+| `apps/dashboard/src/clientMutationFetch.ts` | `3d1f23d68cf809ca48f497c8daebe389a87a847629a27ecb8cb9445f7978d05c` |
+| `apps/dashboard/src/components/ActorBadge.tsx` | `baf77ed4104b677fbd7b1910b7266199259c08ef92e742c6e59dd6ce7342d63b` |
+| `apps/dashboard/src/components/CascadeTelemetryPanel.tsx` | `c182cb8253a0669d470ae3f13d00adb14fa7b4ace88b5e20d082f3955f6ac5ed` |
+| `apps/dashboard/src/components/CounterfactualPanel.tsx` | `81f192420a398283c46331693ea9770c2cea3c10a888a3ef6478abdd2d2ad8f5` |
+| `apps/dashboard/src/components/DecisionPill.tsx` | `52df7178e5f3154f0b918df97a2cb797b31ed9f9b97e5a482d2eed2461e13755` |
+| `apps/dashboard/src/components/IdentityChallengeQueue.tsx` | `f26b2dff0aff16f47998c3c71912ae771dd30f996b434564d048dd00f6f2bebe` |
+| `apps/dashboard/src/components/IdentityReviewNotifications.tsx` | `10c2b3328e9a27c1eafcf614a6038857e0256b2b6550c6f7b3b46ad0bad524bc` |
+| `apps/dashboard/src/components/LiveStream.tsx` | `b845e3bbc1e3ca817c9184b4ce748d306fdeaeac506bbe4dea302d85b322cab9` |
+| `apps/dashboard/src/components/OperatorRegistryEditor.tsx` | `13e6969d864784eed552b0c75cb3ec63f1f05fda2235781f8268bb1c8897225a` |
+| `apps/dashboard/src/components/PersonaAuditPanel.tsx` | `4b5b2bfe37be3379906b04188a55620e7e4554936bb4341625cc45e0bbceb0f0` |
+| `apps/dashboard/src/components/PolicyCopilotPanel.tsx` | `5d6e742fdd11d66d5355818cc7464039d7a3b50e65c788451b6477a521774c57` |
+| `apps/dashboard/src/components/PolicyDiffPreview.tsx` | `a8ff886ce25c3d28b5c389d7f4b77029cf3f353f0cc99480f342b682293ba310` |
+| `apps/dashboard/src/components/PolicyEditor.tsx` | `8b8b98eee2b8550c847362119490a02cf93185a3a5bc35606612774b564d2f28` |
+| `apps/dashboard/src/components/PriceRequiredBillingPanel.tsx` | `ede9b2ea6d394384fd7d99e7e5784a46761b88d96266991fe9947dfff12c8620` |
+| `apps/dashboard/src/components/RevocationCenter.tsx` | `f32b9648b90fbbda411d423168d45cc6b196a1a25a9c2afa721964a57956fbaf` |
+| `apps/dashboard/src/components/RouteAnalytics.tsx` | `7c87f25b0150f948245a28a72b45c79315212d651c2b26a012f05d5e5c4503f3` |
+| `apps/dashboard/src/components/UsageMeter.tsx` | `ab65255e2658db0410e5c0aecb342468ef8e44505691dbf20be2d2c40ca0af6d` |
+| `apps/dashboard/src/dashboardApi.ts` | `32811f301f235f257865959aef00f5317606029274eac9fdd259256e01f661a8` |
+| `apps/dashboard/src/dashboardData.ts` | `5905f58d4a0d40b7bc84e0bf27c21af68f17d5f92b5d5f363df76374f8b350a2` |
+| `apps/dashboard/src/dashboardIdentityChallenges.ts` | `d5bc0da2a8a0e8c5cfa7fbfddfb9eaae18e604062a4930d4a9ab003939449118` |
+| `apps/dashboard/src/dashboardIdentityReviewNotifications.ts` | `4e46e52ab888eec0ef14027f09172bd33331fc1616799616785ded67531eb7c9` |
+| `apps/dashboard/src/dashboardInitialEvents.ts` | `1c293bdb935c3f198ea1ca8e8636428603403955d526160ad1fac77d30cd7268` |
+| `apps/dashboard/src/dashboardLiveActions.ts` | `cebe0bfd6c788bd45e4f08b6d550d0934f40b30f6de9921b5db5b87e967c180c` |
+| `apps/dashboard/src/dashboardLiveModel.ts` | `9c8f6b75f11c6e7ca67da4390f356e0a23ce006446505d11e95c87969c9668f6` |
+| `apps/dashboard/src/dashboardModel.ts` | `0eb15de068756f0edf3980083c026c9a9784422249516569f329fb94bc94ad84` |
+| `apps/dashboard/src/dashboardOperatorRegistry.ts` | `f379c55d4d1afc5a33b8b0f2b004664ee67d2a100ac27b11f71f228d4a13f3e5` |
+| `apps/dashboard/src/dashboardStatus.ts` | `6b457e9eccd5c094c5d01920306c4909a0a1c9fdeccb6f07f17f2618d960be5c` |
+| `apps/dashboard/src/decisionStream.ts` | `79789528149704ceca9c42ef0965cafb010a21754bf0421ed2ee21f65c51a01a` |
+| `apps/dashboard/src/identityChallengeServer.ts` | `396e422e018a507e8110818326c6760137e7f8390fd07f277f9782ddee9efde7` |
+| `apps/dashboard/src/identityReviewNotificationServer.ts` | `38a7ebb83b812e2767435e2dacd99b559555cbb0435dd3772dabc9527fad8177` |
+| `apps/dashboard/src/index.ts` | `d27144d8095c9359f2b01965c8ed3245fe32f5527ff9b4585c16c0fd646ccca2` |
+| `apps/dashboard/src/middleware.ts` | `5268b13ac2aa8e2ee2559941bf01c5da4d1e99dc0720927bfb054e497aa9b051` |
+| `apps/dashboard/src/operatorRegistryServer.ts` | `df614f383d16bb56e2e79af5e3fcd91273bea8c1054b3e24c11221713fe6181c` |
+| `apps/dashboard/src/policyPreview.ts` | `ab3943df57f1595e6c4fc060656d6686568c54d9187d4940f35f9a18a622fdfd` |
+| `apps/dashboard/tests/auth-fetch.test.ts` | `51d9471176d3b51d984ab9399eb780db292a4623f2574ee8c114c0556236a80e` |
+| `apps/dashboard/tests/client-mutation-fetch.test.ts` | `7948d554cf8a2c991a75dc52e2528fa9b70b4ff4188c801495ce07d88d1a8a3d` |
+| `apps/dashboard/tests/decision-stream-latency.test.ts` | `da1774905855b461f00d4a28aa40753da647ff0644cae5915dd6ccb1d7764387` |
+| `apps/dashboard/tests/decisions-api.test.ts` | `799c8df04532b7d83c067f43b4d952224a8094e7cdec7c60e74837fd2102e946` |
+| `apps/dashboard/tests/operator-registry.test.ts` | `f4b4b2768eda959c6fc72eab4efe3f14270ac349efb833ff4beeb240055be3a2` |
+| `apps/dashboard/tests/policy-preview.test.ts` | `75839ab7b678b9c7372fe62d9ba90fe7495299dbb7ffab901db0a71a5e1bb4ab` |
+| `apps/dashboard/tests/sso-state.test.ts` | `2b5ef742c36d335be93d5d4b062b2e8b7e0a0e388541d9c87b275d670c7a42e3` |
+| `apps/dashboard/tests/views.test.ts` | `ebd3d768c9c761078a5d5b7ba3e5e40799dbd922a0b5417652f84c31c550813a` |
+| `apps/dashboard/tsconfig.json` | `646680a8c2e5521bae84fe7bf961be578503cccd1b67fd5089bc9dd365a547ec` |
+| `eslint.config.mjs` | `7781b889aa7e52a6f5650ef73166fe180018fdf2106265aefc65bad6fcaedb6b` |
+| `package.json` | `dbe5155ef879b40b5fd2c2d3f445a23dbd02c3710e620682c91104ac905d75d0` |
+| `packages/common-schemas/package.json` | `0a1b11570b861b6efc8d3cfd8dee6f802ce583d2e7491d31e377816692287a71` |
+| `packages/common-schemas/scripts/generate-openapi.mjs` | `c971c046d94032745c11eca09c7dde070a7b1eb696eb08367124d3d76c2a9ce5` |
+| `packages/common-schemas/src/agentChallenge.ts` | `20519ec39ff69df568020319006ef263b4273e5d2c6ddeb246a87d028cf57c3d` |
+| `packages/common-schemas/src/cascadeTrace.ts` | `a13faaadd0cfb23f21071b44064125543efb567b1b5bebeca0ebacfea4bc1f25` |
+| `packages/common-schemas/src/enums.ts` | `6e886160256a991b42bffceb1cb80e97619e3c4a6045db2eee16695bb543c30b` |
+| `packages/common-schemas/src/errors.ts` | `8ae88bc44754c4e7623e904ecdd9d94961c1d5eb82461e610676bf89d5922760` |
+| `packages/common-schemas/src/events.ts` | `52badaafafc5b22cd3c3c77a0531a7cfdb044ff88aa504cfe32d3d42c7cdb2eb` |
+| `packages/common-schemas/src/httpDecision.ts` | `52551b92673a8aa35c99f0b00d92eada13d08bcf7bf64223798675c5e24e7746` |
+| `packages/common-schemas/src/index.ts` | `058e76efe67639e21ea06885dd51aa16abd45ee006c838ed2f2256c680b22d64` |
+| `packages/common-schemas/src/mcp.ts` | `d42e93fe80f5d787f9ea1e167272cb7e95c6cf118a372c1d5914e3b24e1245dd` |
+| `packages/common-schemas/src/openapi.ts` | `4f935250c1c7c2d7b7b8370c98f0b5707a2d8405ae40edb32b5316897b8d7a86` |
+| `packages/common-schemas/src/policy.ts` | `b555a732722d8d098786626e006bb592bdce9b18b1362f7f2e418c17ab037ac6` |
+| `packages/common-schemas/src/session.ts` | `d8328434be479e0e32ae29caaa563f3000f3651ad7bb2e3d64c619ee83fcff81` |
+| `packages/common-schemas/tests/enums.test.ts` | `99f4d9ac6e4f3b70ee177a84ead07955fe1f5e768c372e2a7d30911cc2fc0d47` |
+| `packages/common-schemas/tests/openapi.test.ts` | `bcbc9da87e4b09e842270479cac8bb779b5dbfd06fad58de804651f138bcd24e` |
+| `packages/common-schemas/tests/schemas.test.ts` | `0b24b7241c3d1993439b807e392c98669ef8a97bfec5200ac41c0cc867126c03` |
+| `packages/common-schemas/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/crypto/package.json` | `85c4f9313fe693c317cacb61a1b3c64ee0bc9c248a4376c116b15b2b4f2f4f55` |
+| `packages/crypto/src/digest.ts` | `318c1ddd19f8123fd57467039594d8913da1a19ab2750678a1af14f1165efd70` |
+| `packages/crypto/src/dpop.ts` | `c9eda1017d28f278c4f632e8ed2473dceb8df806ca0f15fbc73de7e078cd9c79` |
+| `packages/crypto/src/httpMessageSignature.ts` | `7bd382b25d35993cdff9a9ff0d473d60a65cd1c6267081a41cf7691fda3ae00d` |
+| `packages/crypto/src/index.ts` | `fb25869096a20023893fa625f98f26dc329e836a41af0f583550dc404b024ee2` |
+| `packages/crypto/src/jwkThumbprint.ts` | `a2ff8090114728fbbb07d852d0d2756e1b1e2f3af1d54a6bfcf35f141def7e9e` |
+| `packages/crypto/src/jwt.ts` | `ddc08927cc7bdc50d3848a244ae6fbab2d96a4b0cd18c4550644f3a456e7d8d6` |
+| `packages/crypto/src/kmsSigningKey.ts` | `8c1fd42299f78f7f0cfef6c6cca8da196904fa25708ffd73af78a093701965a6` |
+| `packages/crypto/src/replayCache.ts` | `3b5ea89f775fc34eb5dab11cc8be2dc5fd2241afe29ce2ac86fb5cf1530f18ca` |
+| `packages/crypto/src/sessionToken.ts` | `c82b8fc2b016b618f08295df79a2f4ed507761aac204a4004d190aec4b7f49db` |
+| `packages/crypto/src/signatureVerify.ts` | `e1f5753e15116f976ed4d44d2a392948f75cc7b3b72dd4b18bb99058b687b2b4` |
+| `packages/crypto/src/subjectHandle.ts` | `8cd2c5c2c5f55bcab3b409230039973a56d306131d8810000297028f04e5788f` |
+| `packages/crypto/tests/crypto-verify.test.ts` | `00d44b7abb97b9f85b7dd5a49f19da0e7a1fa484970cef838ebaa651044a680f` |
+| `packages/crypto/tests/digest.test.ts` | `2dfc41717fd23500afddb95c37e137c340f0e01e2466d6ed4c28737fda401974` |
+| `packages/crypto/tests/jwk-thumbprint.test.ts` | `97939ac845535830ee42321a932da9356eca471f353daebac50d882088afb298` |
+| `packages/crypto/tests/kms-signing-key.test.ts` | `51ac560d9c18bb5102f294040bd0ed204976acd3bd826f88b9dfa7c65b4bb178` |
+| `packages/crypto/tests/signature-verify.test.ts` | `1d9aa55ddd11c1e6ccdaa88b655bb44e4501543127f5a7d466be990bc641a969` |
+| `packages/crypto/tests/subject-handle.test.ts` | `388c997344ffb2d962b2a4dded295abef0d98c763e13c0829823d7cb8d9b0c2b` |
+| `packages/crypto/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/eventing/package.json` | `bf5927876d9016c6cd636f9772f0497bcd0da785fa19dd4d13dbe22763ead194` |
+| `packages/eventing/src/index.ts` | `448e6a8af65978fd1877aaf46a2dcad1baacb9ebd1072cbde520f39cb5756b52` |
+| `packages/eventing/src/ocsfShaping.ts` | `a2c5edd25cc468b2d525463030a785ad284b17b0c64727ec949b6a826e510ffb` |
+| `packages/eventing/src/outbox.ts` | `2c3deeb20a35e01347600d54a1c6ae4772c7964542fdd9b3be0cc9e82a2392a2` |
+| `packages/eventing/src/redisStreamsAdapter.ts` | `fa899ecaab003d0231f8db9796b6df301ee006650f76102ea24dab412da7322b` |
+| `packages/eventing/src/webhookSigning.ts` | `150d95ce9233c7acc66780e6cebd15748e2eeed234edae46a137ac55797e2066` |
+| `packages/eventing/tests/ocsf-shaping.test.ts` | `2c3701370db49cdd837168564681cf9b6c44f2a203aeeb305ebbc49129dd0f5e` |
+| `packages/eventing/tests/outbox.test.ts` | `a187a5406a1d76825e02ba2281305dbd8d3406de9a7b83c6ad95614579b0572f` |
+| `packages/eventing/tests/redis-streams-adapter.test.ts` | `6f6659d6dc1fd99b85c879571643e131ffe04507539bf9c976f6b5bc5e7141fa` |
+| `packages/eventing/tests/webhook-signing.test.ts` | `7e99c30180074b55a1b5733aab847cf927a270ceddeea6168f58914db27fa17a` |
+| `packages/eventing/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/fingerprint-sidecar/package.json` | `6455d0a5b0396324879767b94ea8ac59d03275b8c51e46d8d4cce99648e3da8c` |
+| `packages/fingerprint-sidecar/src/index.ts` | `c1745a5451f8ca29aa3435cb4204d14400bb2d7c6ba0453607cfaa599ac0d8c5` |
+| `packages/fingerprint-sidecar/src/local-provider.ts` | `5efcac4aa1e5a6acd6cd2e6ed4a114e9c88ab778f162314360112d3db4f3e3e6` |
+| `packages/fingerprint-sidecar/tests/fingerprint-sidecar.test.ts` | `9837c18d7c28697e4e2158ccd82908d56d1e1610a8172646f930e97a306042a4` |
+| `packages/fingerprint-sidecar/tests/local-provider.test.ts` | `cbebd426a52cd63d076e788ccd14a056dcf1d10b342dfffe45d1e9471012bcaf` |
+| `packages/fingerprint-sidecar/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/policy-engine/package.json` | `871a5ea76e9d5593f303146ae70f40c8f8809942aa4aa22c4be491f1e511f24a` |
+| `packages/policy-engine/src/decisionLadder.ts` | `1a42da8a720795c3d5d22747800242ff86ce7a33793b071ead914b5c357667c7` |
+| `packages/policy-engine/src/index.ts` | `2c35c11fe2b01d72fe7a8877b0d508be41dd1a811299912e4ccf0ee6d6e148de` |
+| `packages/policy-engine/src/policyCopilot.ts` | `fec4b1daefb68773db51b3306ffc510aef91fe5518da6b3b19b35f9f772c0e21` |
+| `packages/policy-engine/src/policyLoader.ts` | `8ba1668348b0c3f8f14c429c6935c85d6b95ae658ae1b6b2a6b7a1a4415b538a` |
+| `packages/policy-engine/src/presets.ts` | `d7c1366da6657e87d70aaa01750a92514d4a4cb216e6163e87b81b4a1f13b45f` |
+| `packages/policy-engine/src/resolver.ts` | `81a1aff5a9ce7d9d9655a678910116796a9c823cacff23e38c0d20d624ca318d` |
+| `packages/policy-engine/src/routeTrie.ts` | `cb8d461023b5aabc6608a08db6cad46b227f14220d9ef3df239442e4deb974ab` |
+| `packages/policy-engine/src/schema.ts` | `a13e2a43dbf21ab5d6075c43bbc3bb1f403fb9064cd63d6bea152a5b12d1a5db` |
+| `packages/policy-engine/src/tokenBucket.ts` | `fa91ccf02eace87be674df787e727051d7c70598a45b3a7be175cb31ba334420` |
+| `packages/policy-engine/src/types.ts` | `a4126499249d08ee948f29e0d24d3e8a62c224bcec80ed89e48556103c8c8fa0` |
+| `packages/policy-engine/tests/policy-copilot.test.ts` | `0b24ea2ce25482cfa1f2b1d46e82fc66fbe8c7775017fae040ac09693154283a` |
+| `packages/policy-engine/tests/policy-engine.e2e.test.ts` | `cab97cc7de47967c6b90f5a62726b9c4399bb61c6cb0569803627f9060c994be` |
+| `packages/policy-engine/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/transparency/package.json` | `12aac26a837172859f2af8df26e746d2b07f52a8e23935318a1655e0ae7ba9f9` |
+| `packages/transparency/src/checkpointWorker.ts` | `b43f80980aac3bf8c8c984d9187c1c9631faac8d3cf7098719a2d98316abb8c4` |
+| `packages/transparency/src/inclusionProof.ts` | `44fcb5a3268d50f8c910f4585b557c93c9d91a24a60dbaafa145d55c54d79432` |
+| `packages/transparency/src/index.ts` | `f703e7bd998358923c44cfdbf93dcae4b6c1b195fa2a3fe12e4ddcbd6f509b43` |
+| `packages/transparency/src/localLog.ts` | `d222365ae190c5c0f5fcad40f8b9aefae6325685fa161085f0f82388cea57fbd` |
+| `packages/transparency/tests/checkpoint-worker.test.ts` | `2c105336561e48cf325b4ce428249af68e6b29baf27ee0722abd9b07557a3582` |
+| `packages/transparency/tests/commitment-root.test.ts` | `16676c44990cbcfd2a07184bd8bfee79ad57c57bb0b38f11dec0853fe24af3a6` |
+| `packages/transparency/tests/dashboard-deploy-summary.test.ts` | `f0d7b75d89a8395d69538163ef918f4ffe43f8013c586556c642cf86c0972dcf` |
+| `packages/transparency/tests/dashboard-live-canary.test.ts` | `b004b2b451eb648115e4583f5a5104f941d00187aba0ca130486a38f443e2889` |
+| `packages/transparency/tests/evidence-pack.test.ts` | `1013c179f9215e4697c209b8f82bee49eaf033255ef5b996209c7f83cd65157e` |
+| `packages/transparency/tests/local-log.test.ts` | `8b3ce99d57f6374d372ac2889c420e0467aa050c3ef814e5e14affeb844d6d02` |
+| `packages/transparency/tests/release-manifest.test.ts` | `4109f2f57f2f042ded3500c11e783e789613d66b8429c93bfbe5186249108081` |
+| `packages/transparency/tests/service-image-content.test.ts` | `aa2da1fc18f8f8cc6810518da448ecb46d89fb1255a71c4a6dc14428fbbdcf6f` |
+| `packages/transparency/tests/terraform-infra.test.ts` | `d56c9e3f8766af21dd3c03ac829bfbc06b351781ed6ae05f2d2ba3bdd115244f` |
+| `packages/transparency/tests/transparency-e2e.test.ts` | `a86e4509ec37f53a76dd31cd488df019a600a63f84147aed79c7e67f520805ee` |
+| `packages/transparency/tests/workflow-hardening.test.ts` | `d8815f22a7fe6ec88f43a386a773cb19bbe5075488fdb27fdfe142852c4b697e` |
+| `packages/transparency/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `packages/verifier-node/package.json` | `a1041e82d31c93fa382d62d0ce961fe4edf45e7e04a15b1d3a068b714033dd36` |
+| `packages/verifier-node/README.md` | `d1e624505c0be77675fcc7303903f35aee7e6a192cd86b4b370c5141726eecc7` |
+| `packages/verifier-node/src/classifier.ts` | `bdcb9b80632a83ff0f0ccec00d4248f32cdc5835a3635109903f1a03bb6a0f43` |
+| `packages/verifier-node/src/correlation.ts` | `e49469829436ccc40de4005b0cd4d2f67a75a371286b3ac26e620d766a5d8cab` |
+| `packages/verifier-node/src/cryptoPath.ts` | `c49441b3efbbc436d84de71c3b4d08bb9fd1f0abc8da528024e1a2e6fb2cf881` |
+| `packages/verifier-node/src/decisionEmitter.ts` | `c6061024ead08687438e2c9d7fc203a03e80222e2f1f954eb09fdffd542303a7` |
+| `packages/verifier-node/src/express.ts` | `6e0295d0f6c81d5ed2b048fc6efeb2b0ae7ad9a6d784ffbd033b8b9601bd0957` |
+| `packages/verifier-node/src/fastify.ts` | `cbbef8b92b39bc172f5e2f9537255a7c0d2bb899a80abc72c4131adaa6108d92` |
+| `packages/verifier-node/src/headers.ts` | `2397cdca664dde2cf77733f7a5e1be7e1ec560ad631b93bdf63e27ba390b7f44` |
+| `packages/verifier-node/src/hotpath.ts` | `0ac53a96d6142eb846e8647d19bb2a7e7567b4e02aa4269a68ce4e4abf15b9c8` |
+| `packages/verifier-node/src/index.ts` | `18a45e91ccbbbdbb66d3761684bdc828ab9b7457c717b88f909425e761c354a4` |
+| `packages/verifier-node/src/metrics.ts` | `93970016ff46289ce056ee67bba25ba92d20a7352d271848ea50c60fa5a266ed` |
+| `packages/verifier-node/src/next.ts` | `d93fc8c58c67a92e0a2c4d7484db60693c654023451efbdb4f7f936d8e606a81` |
+| `packages/verifier-node/src/omarGateTemplate.ts` | `38416d4bdd799ef2575befa9e31dff7416124b0df88c53454988711ed1af1282` |
+| `packages/verifier-node/src/pathNormalize.ts` | `f774b3d17811e6f9df237d5580c6f1216cd608f507bc0f8be4edc906cf939cd7` |
+| `packages/verifier-node/src/quarantinePinCache.ts` | `fb356096b2aab6d3d5756fd7618dd71269cacb2d2825a9f7479acf22d401b49b` |
+| `packages/verifier-node/src/response.ts` | `d09ec4475b5c66fdb65d685a22bb69b02db75797296c75cbe690717a565e208c` |
+| `packages/verifier-node/src/types.ts` | `b7deeffe5dc0b11eb61b054496ffcaac054a38e5ace35eed26e9c7b468aee52f` |
+| `packages/verifier-node/src/upstreamLimits.ts` | `d91160cd7b721f7dfd40c865798da990a660f342b070facd257efafc66cc470b` |
+| `packages/verifier-node/templates/github/aidenid-omar-gate.yml` | `024e8fcef5ae4c43f140e352ef23b20a29cf46cdcb95b8740cecdfe3e17d286c` |
+| `packages/verifier-node/tests/adapters.test.ts` | `91d54e6175f262326d52981c24e8ff10a6da46f7f7681878ba05d930e6b770c1` |
+| `packages/verifier-node/tests/classifier.test.ts` | `73f591eec71a4bcfb41b73b594e26bc19bc0b1fca7fd5671c724367d6684581f` |
+| `packages/verifier-node/tests/cross-language-vectors.test.ts` | `87610458cf7329e36392f2eb6fdd6f8b5d372e99b2b9ac06ebb6b618ec7efc2a` |
+| `packages/verifier-node/tests/crypto-verify.e2e.test.ts` | `2ccecc64c7bda553792e778858b2d6304823a093d51060a1cdb42aad2bc49563` |
+| `packages/verifier-node/tests/decision-emitter.test.ts` | `1c425386b45249b635c6d2e5bd75ffd98fd34d1554406d02590019efef8718c9` |
+| `packages/verifier-node/tests/degraded-mode.e2e.test.ts` | `90046464ae3e4feb841d11ac14f67b3e832a87d54203425c77a366cd6b182fdc` |
+| `packages/verifier-node/tests/fixtures/cross-language-vectors.json` | `f5aac7fc710c5c0b90aaa4184e256a08ef31681d5530eb55d810f1ad78e822bb` |
+| `packages/verifier-node/tests/hotpath.test.ts` | `2f2f2a0fc0409ae4178f9bf2490e9c2f99e39d6d6f627701f01d71d85d67e0b9` |
+| `packages/verifier-node/tests/latency.test.ts` | `524af09e5a416a61f7882263ed224cc400ade482c06646c816055fe12497edce` |
+| `packages/verifier-node/tests/metrics.test.ts` | `d819d2ceb967634f0f131934c853790568bbf3675248c1b30df358bd1f9c4bb4` |
+| `packages/verifier-node/tests/omar-gate-template.test.ts` | `f0aa45ee1a3e06b6ccf4790101c58f5d010e049ed7a36ef8e5fde41034823a49` |
+| `packages/verifier-node/tests/path-normalize.test.ts` | `fe329a007b2e6a13209a811fd559d8a54107e6ebf61c64b6b9fe7cef99f40e76` |
+| `packages/verifier-node/tests/policy-engine.e2e.test.ts` | `2a84c78122ea0d953fe0b6b7c146a5e64bee579c3e780d1c1b3defa6d6516370` |
+| `packages/verifier-node/tests/quarantine-pin-cache.test.ts` | `29793ea68263ac8d5d55400344f2ef91afe882de5754362b966a9144ef06099b` |
+| `packages/verifier-node/tests/response.test.ts` | `4ccb2f12e3e50594e0b6d2fed5c89516b32a979fa72d972580d28df8669c8c20` |
+| `packages/verifier-node/tests/rollback-controls.test.ts` | `6d44128dd0e5ff2513691abe2a5c789f21733a69671e34d0bd7286d3c490145a` |
+| `packages/verifier-node/tests/upstream-limits.test.ts` | `7b9b4f915268dffa1a32bcbe458b4ba75c8e06db3f080171b872a0215d8999be` |
+| `packages/verifier-node/tsconfig.json` | `937a307cefe1b19a3e45cd6c712273740e12c10fc17b93fd4755752f1b82a8dc` |
+| `pnpm-lock.yaml` | `98459ac2a2ed4f0a09a08aaaf250a21ee8652d801c1739b6fc1d06cb7112c669` |
+| `pnpm-workspace.yaml` | `3c52e5f4abf5335cbafb67a98c7466b994a93cd9b5236d671773e5c089e56544` |
+| `tsconfig.base.json` | `8868d3f81b1ab0315eb89d8df1c2dd078c850b96522d640a5d97dc3260e761ac` |
+| `tsconfig.test.json` | `c16cd07dac4d6ee12a16caee93ca30be87ebedd50b6f8258b3fefc5cb037185d` |
+| `turbo.json` | `de09532abf93c4696254738c3f038ab3c604c840ddb8e6895f8c9752f30d71c7` |
+| `vitest.config.ts` | `72510d9a261e1484a0751e9ed2e395a09082aba71f050684f30ee43889f1df44` |

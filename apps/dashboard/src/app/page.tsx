@@ -1,4 +1,5 @@
 import { CascadeTelemetryPanel } from "../components/CascadeTelemetryPanel.js";
+import { ControlPlaneHealth } from "../components/ControlPlaneHealth.js";
 import { LiveStream } from "../components/LiveStream.js";
 import { PersonaAuditPanel } from "../components/PersonaAuditPanel.js";
 import { PolicyCopilotPanel } from "../components/PolicyCopilotPanel.js";
@@ -106,6 +107,7 @@ export default async function DashboardPage() {
           <p className={`runtime-pill runtime-${runtimeStatus.mode}`}>
             {runtimeLabel(runtimeStatus.mode)}
           </p>
+          <ControlPlaneHealth />
         </div>
         <UsageMeter decisions={decisions} p95LatencyMs={p95LatencyMs} />
       </header>
