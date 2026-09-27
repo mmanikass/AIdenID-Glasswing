@@ -106,6 +106,8 @@ describe("lease hardening", () => {
     // A lease that expired and was re-acquired by someone else is left alone.
     const stolen = fakeRedis(true);
     const original = revokeChain(services, { chainId, reason: "again", actorId: "platform_admin" }, { redis: stolen });
+    // Let the in-process lease and the SET NX happen, then simulate expiry + re-acquisition by another holder.
+    await new Promise((resolve) => setTimeout(resolve, 0));
     stolen.values.set(`lease:revoke:${chainId}`, "someone_else");
     await original;
     expect(stolen.values.get(`lease:revoke:${chainId}`)).toBe("someone_else");

@@ -202,9 +202,10 @@ async function acquireMemoryLease(
   leaseKey: string,
   chainId: string,
   ownerId: string,
-  waitMs: number
+  waitMs: number,
+  warnIfFallback = true
 ): Promise<AcquiredLease> {
-  if (!inMemoryWarningEmitted) {
+  if (warnIfFallback && !inMemoryWarningEmitted) {
     inMemoryWarningEmitted = true;
     console.warn(
       "[control-plane] revocation lease falling back to in-memory Set; " +
@@ -247,27 +248,53 @@ async function acquireLease(
   ownerId: string,
   options: RevokeChainOptions | undefined
 ): Promise<AcquiredLease> {
-  const ttlMs = clampTtl(options?.leaseTtlMs);
-  if (options?.redis) {
-    return acquireRedisLease(options.redis, leaseKey, chainId, ownerId, ttlMs);
+  const waitMs = options?.leaseWaitMs ?? DEFAULT_LEASE_WAIT_MS;
+  if (!options?.redis && !options?.pgClient) {
+    return acquireMemoryLease(leaseKey, chainId, ownerId, waitMs);
   }
-  if (options?.pgClient) {
-    const lease = await acquirePgLease(options.pgClient, leaseKey, chainId, ownerId);
-    // Track owner so same-actor retries inside this process are idempotent.
-    inMemoryLeases.set(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`, ownerId);
-    const release = lease.release;
-    return {
-      ...lease,
-      release: async () => {
-        try {
-          await release();
-        } finally {
-          inMemoryLeases.delete(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`);
+  // Same-process exclusion FIRST. PostgreSQL session-level advisory locks are re-entrant for
+  // the owning session (a second pg_try_advisory_lock on the same client succeeds while a
+  // waiter exists), and Redis SET NX admits a retry by the same owner id, so two callers in
+  // this process sharing one client or one actor id would both pass the cross-replica lock.
+  // The in-process lease serializes them before that lock is even attempted; the backend
+  // lock then excludes OTHER processes. Released in reverse order.
+  const local = await acquireMemoryLease(leaseKey, chainId, ownerId, waitMs, false);
+  let backend: AcquiredLease;
+  try {
+    const ttlMs = clampTtl(options.leaseTtlMs);
+    if (options.redis) {
+      backend = await acquireRedisLease(options.redis, leaseKey, chainId, ownerId, ttlMs);
+    } else {
+      const pgClient = options.pgClient as RevocationPgClient;
+      const lease = await acquirePgLease(pgClient, leaseKey, chainId, ownerId);
+      // Track owner so same-actor retries inside this process are idempotent.
+      inMemoryLeases.set(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`, ownerId);
+      const release = lease.release;
+      backend = {
+        ...lease,
+        release: async () => {
+          try {
+            await release();
+          } finally {
+            inMemoryLeases.delete(`pg:${pgAdvisoryKeyFromChainId(leaseKey)}`);
+          }
         }
-      }
-    };
+      };
+    }
+  } catch (error) {
+    await local.release();
+    throw error;
   }
-  return acquireMemoryLease(leaseKey, chainId, ownerId, options?.leaseWaitMs ?? DEFAULT_LEASE_WAIT_MS);
+  return {
+    ...backend,
+    release: async () => {
+      try {
+        await backend.release();
+      } finally {
+        await local.release();
+      }
+    }
+  };
 }
 
 export async function revokeChain(
@@ -395,7 +422,10 @@ export type ChainEffectResult<T> =
  *
  * Supported lease backends for the effect gate:
  * - in-process lease (no TTL; single-process guarantee, the profile the demo ships);
- * - Postgres session-level advisory lock on a dedicated connection (held until release).
+ * - Postgres session-level advisory lock (held until release). Session advisory locks are
+ *   re-entrant for the owning session, so same-process callers are serialized by the
+ *   in-process lease BEFORE the session lock is taken; sharing one pg client between the
+ *   gate and revokeChain cannot bypass exclusion, and the session lock excludes other processes.
  * NOT supported: the Redis lease. It carries a TTL capped at 5 s with no renewal or fencing,
  * so an effect that outlives the TTL could commit after a revoke won the re-acquired lease.
  * Rather than advertise a guarantee it cannot keep, the gate refuses to run the effect
