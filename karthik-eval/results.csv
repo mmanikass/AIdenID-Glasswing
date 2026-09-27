@@ -1,0 +1,25 @@
+case_id,split,status,purpose_pred,purpose_conf,injection_pred,injection_conf,purpose_probs,injection_probs,latency_ms,input_tokens,output_tokens,model_id,rubric_version,dataset_version,build_sha,config_sha,run_at,error
+D-01,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-02,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-03,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-04,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-05,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-06,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-07,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-08,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-09,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-10,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-11,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-12,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-13,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-14,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-15,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-16,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-17,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-18,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-19,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-20,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-21,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-22,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-23,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set
+D-24,dev,NOT_RUN,,,,,,,,,,jev-1.13,label-guide-v0.1,cases-v0.1,UNKNOWN,a4281ab9842e,2026-09-27T14:28:59+00:00,TYPESAFE_API_KEY not set

@@ -1,0 +1,6 @@
+Jev availability probe via Vercel AI Gateway (2026-09-27 11:11 EDT)
+Request: minimal 1-question systemone call, model typesafe-ai/jev
+attempt 1: HTTP 429 in 0.243559s | The upstream provider is currently experiencing high demand. Please retry shortly.
+attempt 2: HTTP 429 in 0.424229s | The upstream provider is currently experiencing high demand. Please retry shortly.
+attempt 3: HTTP 429 in 0.372051s | The upstream provider is currently experiencing high demand. Please retry shortly.
+Model listing endpoint: HTTP 200 (auth + card OK)
