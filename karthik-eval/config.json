@@ -1,0 +1,11 @@
+{
+  "dataset_version": "cases-v0.1",
+  "rubric_version": "label-guide-v0.1",
+  "model_id": "jev-1.13 (pinned; response 'model' is recorded per row)",
+  "build_sha": "UNKNOWN",
+  "timeout_s": 180,
+  "thresholds": {
+    "note": "Jev returns choice + confidence. Report raw choices. Any confidence gate must be set on dev only, then frozen."
+  },
+  "frozen": false
+}
