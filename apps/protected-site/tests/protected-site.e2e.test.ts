@@ -1,6 +1,6 @@
 import { buildSignedHeaders, signedFetch } from "@aidenid/agent-client";
 import { decodeCompactJwt, signCompactJws } from "@aidenid/crypto";
-import type { JevProvider } from "@aidenid/jev";
+import type { JevAssessment, JevProvider } from "@aidenid/jev";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { createProtectedSiteRuntime } from "../src/index.js";
@@ -32,6 +32,28 @@ async function createRuntime(jevProvider?: JevProvider | null): Promise<Protecte
   return runtime;
 }
 
+function operatorHeaders(runtime: ProtectedSiteRuntime): Record<string, string> {
+  return { authorization: `Bearer ${runtime.operatorToken}`, "content-type": "application/json" };
+}
+
+async function createManagedAgent(runtime: ProtectedSiteRuntime): Promise<{ id: string; keyId: string }> {
+  const response = await runtime.app.inject({ method: "POST", url: "/glasswing/agents", headers: operatorHeaders(runtime), payload: "{}" });
+  expect(response.statusCode).toBe(201);
+  const body = response.json() as { agent: { id: string; keyId: string } };
+  return { id: body.agent.id, keyId: body.agent.keyId };
+}
+
+async function createManagedGrant(runtime: ProtectedSiteRuntime, agentId: string, permission: string) {
+  const response = await runtime.app.inject({
+    method: "POST",
+    url: "/glasswing/grants",
+    headers: operatorHeaders(runtime),
+    payload: JSON.stringify({ agentId, permissions: [permission], expiresInSeconds: 3_600 })
+  });
+  expect(response.statusCode).toBe(201);
+  return (response.json() as { grant: { id: string; chainId: string; resource: string; permissions: string[] } }).grant;
+}
+
 function fetchFrom(app: ProtectedSiteRuntime["app"]) {
   return async (input: string, init?: RequestInit): Promise<Response> => {
     const url = new URL(input);
@@ -46,6 +68,204 @@ function fetchFrom(app: ProtectedSiteRuntime["app"]) {
 }
 
 describe("protected-site verifier integration", () => {
+  it("manages server-held agent keys and runs scoped tasks without returning session tokens", async () => {
+    const runtime = await createRuntime(clearJevProvider());
+    const unauthorized = await runtime.app.inject({ method: "GET", url: "/glasswing/agents" });
+    expect(unauthorized.statusCode).toBe(401);
+
+    const created = await runtime.app.inject({ method: "POST", url: "/glasswing/agents", headers: operatorHeaders(runtime), payload: "{}" });
+    expect(created.statusCode).toBe(201);
+    const createdBody = created.json() as { agent: { id: string; keyId: string; thumbprint: string; publicJwk: Record<string, unknown>; createdAt: string } };
+    expect(createdBody.agent).toMatchObject({ keyId: expect.stringMatching(/^agk_/), publicJwk: { kty: "OKP", crv: "Ed25519" } });
+    expect(createdBody.agent).not.toHaveProperty("privateKey");
+    const agentList = await runtime.app.inject({ method: "GET", url: "/glasswing/agents", headers: operatorHeaders(runtime) });
+    expect((agentList.json() as { agents: unknown[] }).agents).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: createdBody.agent.id, keyId: createdBody.agent.keyId })])
+    );
+
+    const grant = await createManagedGrant(runtime, createdBody.agent.id, "catalog:read");
+    expect(grant).toMatchObject({
+      siteId: runtime.siteId,
+      resource: "https://aidenid.local/catalog",
+      permissions: ["catalog:read"]
+    });
+    const otherAgent = await createManagedAgent(runtime);
+    const otherGrant = await createManagedGrant(runtime, otherAgent.id, "catalog:read");
+    const crossAgentRun = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: otherGrant.id, task: "catalog" })
+    });
+    expect(crossAgentRun.statusCode).toBe(403);
+    expect(crossAgentRun.json()).toMatchObject({ error: { code: "grant_forbidden" }, session: null, decision: null, effect: null, jev: null });
+    const mixedScope = await runtime.app.inject({
+      method: "POST",
+      url: "/glasswing/grants",
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ agentId: createdBody.agent.id, permissions: ["catalog:read", "items:reserve"] })
+    });
+    expect(mixedScope.statusCode).toBe(400);
+
+    const run = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: grant.id, task: "catalog" })
+    });
+    expect(run.statusCode).toBe(200);
+    const result = run.json() as {
+      request: { method: string; url: string };
+      session: { sessionId: string; revocationEpoch: number };
+      decision: { requestId: string; decisionId: string; action: string; reasonCodes: string[]; actorClass: string };
+      effect: { ok: boolean; value: { items: Array<{ id: string }> } };
+      jev: unknown;
+    };
+    expect(result).toMatchObject({
+      request: { method: "GET", url: grant.resource },
+      session: { sessionId: expect.any(String), revocationEpoch: 0 },
+      decision: { action: "allow", actorClass: "verified_agent" },
+      effect: { ok: true, value: { items: [{ id: "demo-item" }] } },
+      jev: null
+    });
+    expect(result.decision.requestId).not.toBe("");
+    expect(result.decision.decisionId).not.toBe("");
+    expect(JSON.stringify(result)).not.toContain("accessToken");
+    expect(JSON.stringify(result)).not.toContain("privateKey");
+
+    const reserveGrant = await createManagedGrant(runtime, createdBody.agent.id, "items:reserve");
+    const reserve = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: reserveGrant.id, task: "reserve" })
+    });
+    expect(reserve.json()).toMatchObject({
+      decision: { action: "allow", actorClass: "verified_agent" },
+      effect: { ok: true, value: { item_id: "demo-item", status: "reserved" } }
+    });
+
+    const missingExportPermission = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: grant.id, task: "export" })
+    });
+    expect(missingExportPermission.statusCode).toBe(403);
+    expect(missingExportPermission.json()).toMatchObject({ error: { code: "permission_scope_mismatch" } });
+
+    const exportGrant = await createManagedGrant(runtime, createdBody.agent.id, "customers:export");
+    const exported = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${createdBody.agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: exportGrant.id, task: "export" })
+    });
+    expect(exported.json()).toMatchObject({ decision: { action: "deny" }, effect: { ok: false } });
+  });
+
+  it("serves the same session keys and recorded decisions from the embedded control-plane listener", async () => {
+    const runtime = await createRuntime(clearJevProvider());
+    await runtime.controlPlane.app.listen({ host: "127.0.0.1", port: 0 });
+    const address = runtime.controlPlane.app.server.address();
+    if (address === null || typeof address === "string") {
+      throw new Error("embedded control-plane listener did not bind a TCP port");
+    }
+    const controlPlaneUrl = `http://127.0.0.1:${address.port}`;
+
+    const response = await signedFetch(runtime.demoAgent.key, runtime.demoAgent.grants.catalog.resource, {
+      method: "GET",
+      sessionToken: runtime.demoAgent.sessions.catalog.accessToken,
+      fetchImpl: fetchFrom(runtime.app)
+    });
+    expect(response.status).toBe(200);
+
+    const jwks = await fetch(`${controlPlaneUrl}/.well-known/aidenid-session-jwks.json`);
+    expect(jwks.status).toBe(200);
+    expect(await jwks.json()).toMatchObject({ issuer: "https://control-plane.aidenid.local", keys: [expect.objectContaining({ kid: expect.any(String) })] });
+
+    const decisions = await fetch(`${controlPlaneUrl}/v1/decisions?site_id=${encodeURIComponent(runtime.siteId)}&limit=10`, {
+      headers: { authorization: `Bearer ${runtime.operatorToken}` }
+    });
+    expect(decisions.status).toBe(200);
+    expect(await decisions.json()).toMatchObject({ decisions: [expect.objectContaining({ site_id: runtime.siteId, decision: "allow" })] });
+  });
+
+  it("queues bulk reports, releases approval once under chain authority, and records review denial", async () => {
+    const runtime = await createRuntime(null);
+    const agent = await createManagedAgent(runtime);
+    const grant = await createManagedGrant(runtime, agent.id, "reports:bulk");
+    const runBulkReport = async () => runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/agents/${agent.id}/run`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ grantId: grant.id, task: "bulk-report", purpose: "Compare order totals for the current quarter." })
+    });
+
+    const firstRun = await runBulkReport();
+    expect(firstRun.statusCode).toBe(200);
+    const firstResult = firstRun.json() as { decision: { action: string }; jev: JevAssessment; effect: unknown };
+    expect(firstResult.decision.action).toBe("queue");
+    expect(firstResult.jev).toMatchObject({ verificationStatus: "unavailable", obligation: "review_required" });
+    expect(firstResult.effect).toBeNull();
+
+    const pending = await runtime.app.inject({ method: "GET", url: "/glasswing/reviews", headers: operatorHeaders(runtime) });
+    const reviews = (pending.json() as { reviews: Array<{ id: string; status: string; agentId: string; task: string; purpose: string }> }).reviews;
+    expect(reviews).toHaveLength(1);
+    expect(reviews[0]).toMatchObject({ status: "pending", agentId: agent.id, task: "bulk-report", purpose: "Compare order totals for the current quarter." });
+
+    const approve = async (id: string) => runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/reviews/${id}`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ decision: "approve" })
+    });
+    const approved = await approve(reviews[0]!.id);
+    expect(approved.json()).toMatchObject({ review: { id: reviews[0]!.id, status: "approved" } });
+    await approve(reviews[0]!.id);
+    expect(runtime.releasedReports).toHaveLength(1);
+    expect(runtime.releasedReports[0]).toMatchObject({ reviewId: reviews[0]!.id, grantId: grant.id, rows: [{ orders: 3 }] });
+
+    await runBulkReport();
+    const allPending = (await runtime.app.inject({ method: "GET", url: "/glasswing/reviews", headers: operatorHeaders(runtime) })).json() as {
+      reviews: Array<{ id: string; status: string }>;
+    };
+    const secondReview = allPending.reviews.find((review) => review.status === "pending");
+    expect(secondReview).toBeDefined();
+    const denied = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/reviews/${secondReview!.id}`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ decision: "deny" })
+    });
+    expect(denied.json()).toMatchObject({ review: { id: secondReview!.id, status: "denied" } });
+    expect(runtime.releasedReports).toHaveLength(1);
+
+    await runBulkReport();
+    const thirdPending = (await runtime.app.inject({ method: "GET", url: "/glasswing/reviews", headers: operatorHeaders(runtime) })).json() as {
+      reviews: Array<{ id: string; status: string }>;
+    };
+    const thirdReview = thirdPending.reviews.find((review) => review.status === "pending");
+    expect(thirdReview).toBeDefined();
+    const revoke = await runtime.app.inject({
+      method: "POST",
+      url: "/glasswing/revoke",
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ chainId: grant.chainId, reason: "review_authority_revoked" })
+    });
+    expect(revoke.statusCode).toBe(202);
+    const refusedApproval = await runtime.app.inject({
+      method: "POST",
+      url: `/glasswing/reviews/${thirdReview!.id}`,
+      headers: operatorHeaders(runtime),
+      payload: JSON.stringify({ decision: "approve" })
+    });
+    expect(refusedApproval.json()).toMatchObject({ review: { id: thirdReview!.id, status: "denied" } });
+    expect(runtime.releasedReports).toHaveLength(1);
+    const decisions = await runtime.controlPlane.services.store.listDecisions(runtime.siteId, 100);
+    expect(decisions).toEqual(expect.arrayContaining([expect.objectContaining({ decision: "deny", reasonCodes: expect.arrayContaining(["operator_override"]) })]));
+  });
+
   it("verifies signed routes, denies exports, and records Jev's composed report decision", async () => {
     const runtime = await createRuntime(clearJevProvider());
     const { key, sessions, grants } = runtime.demoAgent;
