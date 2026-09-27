@@ -22,6 +22,7 @@
     "@aidenid/crypto": "workspace:*"
   },
   "devDependencies": {
-    "@aidenid/verifier-node": "workspace:*"
+    "@aidenid/verifier-node": "workspace:*",
+    "@aidenid/control-plane": "workspace:*"
   }
 }
