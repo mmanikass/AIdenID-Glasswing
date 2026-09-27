@@ -1,0 +1,128 @@
+[
+  {
+    "name": "browser observe request stays allowed with human label",
+    "input": {
+      "method": "GET",
+      "url": "https://shop.example.com/products/123?ref=agent",
+      "headers": {
+        "user-agent": "Mozilla/5.0 Chrome/122",
+        "accept": "text/html",
+        "x-request-id": "req_browser"
+      }
+    },
+    "options": { "siteId": "sit_demo", "apiKey": "key", "mode": "observe" },
+    "expected": {
+      "requestId": "req_browser",
+      "actorClass": "likely_human",
+      "decision": "allow",
+      "recommendedDecision": "allow",
+      "path": "/products/123",
+      "routeTemplate": "/products/:id",
+      "observeOnly": true,
+      "rateLimitStatus": "ok",
+      "httpStatus": 200
+    }
+  },
+  {
+    "name": "signed request material is labeled signed agent",
+    "input": {
+      "method": "POST",
+      "url": "/checkout",
+      "headers": {
+        "signature-input": "sig1=(\"@method\" \"@path\")",
+        "x-correlation-id": "req_signed"
+      }
+    },
+    "options": { "siteId": "sit_demo", "apiKey": "key", "mode": "enforce" },
+    "expected": {
+      "requestId": "req_signed",
+      "actorClass": "signed_agent",
+      "decision": "allow",
+      "recommendedDecision": "allow",
+      "path": "/checkout",
+      "routeTemplate": "/checkout",
+      "observeOnly": false,
+      "rateLimitStatus": "ok",
+      "httpStatus": 200
+    }
+  },
+  {
+    "name": "suspicious automation throttles in enforce mode",
+    "input": {
+      "method": "GET",
+      "url": "/inventory/sku_0123456789abcdef",
+      "headers": {
+        "user-agent": "python-requests/2.32",
+        "x-request-id": "req_suspicious"
+      }
+    },
+    "options": { "siteId": "sit_demo", "apiKey": "key", "mode": "enforce" },
+    "expected": {
+      "requestId": "req_suspicious",
+      "actorClass": "suspicious_automation",
+      "decision": "throttle",
+      "recommendedDecision": "throttle",
+      "path": "/inventory/sku_0123456789abcdef",
+      "routeTemplate": "/inventory/:id",
+      "observeOnly": false,
+      "rateLimitStatus": "ok",
+      "httpStatus": 429
+    }
+  },
+  {
+    "name": "upstream rate limit throttle preserves retry after",
+    "input": {
+      "method": "GET",
+      "url": "/account/550e8400-e29b-41d4-a716-446655440000",
+      "statusCode": 429,
+      "headers": {
+        "user-agent": "Mozilla/5.0 Safari/605.1",
+        "accept": "text/html",
+        "retry-after": "15",
+        "ratelimit-remaining": "0",
+        "x-request-id": "req_rate"
+      }
+    },
+    "options": { "siteId": "sit_demo", "apiKey": "key", "mode": "enforce" },
+    "expected": {
+      "requestId": "req_rate",
+      "actorClass": "likely_human",
+      "decision": "throttle",
+      "recommendedDecision": "throttle",
+      "path": "/account/550e8400-e29b-41d4-a716-446655440000",
+      "routeTemplate": "/account/:id",
+      "observeOnly": false,
+      "rateLimitStatus": "throttled",
+      "retryAfterSeconds": 15,
+      "httpStatus": 429
+    }
+  },
+  {
+    "name": "rollback pause converts enforce to observe",
+    "input": {
+      "method": "POST",
+      "url": "/comments/987654321",
+      "headers": {
+        "user-agent": "HeadlessChrome",
+        "x-request-id": "req_pause"
+      }
+    },
+    "options": {
+      "siteId": "sit_demo",
+      "apiKey": "key",
+      "mode": "enforce",
+      "rollback": { "globalEnforcementPause": true }
+    },
+    "expected": {
+      "requestId": "req_pause",
+      "actorClass": "suspicious_automation",
+      "decision": "allow",
+      "recommendedDecision": "throttle",
+      "path": "/comments/987654321",
+      "routeTemplate": "/comments/:id",
+      "observeOnly": true,
+      "rateLimitStatus": "ok",
+      "httpStatus": 200
+    }
+  }
+]

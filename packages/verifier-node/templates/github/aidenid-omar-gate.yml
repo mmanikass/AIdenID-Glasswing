@@ -1,0 +1,14 @@
+name: AIdenID Verifier Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  aidenid-verifier-gate:
+    uses: mrrCarter/aidenid-clearance/.github/workflows/aidenid-verifier-gate.yml@v0
+    secrets: inherit
+    with:
+      sentinelayer_spec_id: ${{ vars.SENTINELAYER_SPEC_ID }}
+      scan_mode: deep
+      severity_gate: P1

@@ -1,0 +1,23 @@
+{
+  "name": "@aidenid/dashboard",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "next build",
+    "typecheck": "pnpm --filter @aidenid/policy-engine build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aidenid/policy-engine": "workspace:*",
+    "lucide-react": "^1.9.0",
+    "next": "^15.5.18",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
+  }
+}

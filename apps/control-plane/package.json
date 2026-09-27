@@ -1,0 +1,26 @@
+{
+  "name": "@aidenid/control-plane",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "node dist/start.js",
+    "typecheck": "pnpm --filter @aidenid/common-schemas build && pnpm --filter @aidenid/crypto build && pnpm --filter @aidenid/eventing build && pnpm --filter @aidenid/policy-engine build && pnpm --filter @aidenid/transparency build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aidenid/common-schemas": "workspace:*",
+    "@aidenid/crypto": "workspace:*",
+    "@aidenid/eventing": "workspace:*",
+    "@aidenid/policy-engine": "workspace:*",
+    "@aidenid/transparency": "workspace:*",
+    "fastify": "^5.8.5",
+    "pg": "^8.20.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.20.0"
+  }
+}

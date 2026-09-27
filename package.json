@@ -1,0 +1,58 @@
+{
+  "name": "aidenid-clearance",
+  "version": "0.0.0",
+  "private": true,
+  "description": "AIdenID Clearance Layer verifier, registry, control plane, and decision stream.",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "fast-uri": "3.1.5",
+      "postcss": "8.5.23",
+      "vite": "8.0.16",
+      "nanoid": "3.3.18",
+      "find-my-way": "9.7.0",
+      "next": "15.5.21",
+      "sharp": "0.35.0",
+      "js-yaml": "4.3.1",
+      "brace-expansion@1": "1.1.18",
+      "brace-expansion@5": "5.0.9"
+    }
+  },
+  "scripts": {
+    "audit:critical": "pnpm audit --audit-level=critical",
+    "audit:high": "pnpm audit --audit-level=high",
+    "benchmark:cascade": "pnpm --filter @aidenid/cascade-latency-benchmark build && pnpm --filter @aidenid/cascade-latency-benchmark benchmark --decisions 1000 --concurrency 50 --seed 20260502 --output docs/dd/artifacts/cascade-latency-2026-05-02.json",
+    "build": "turbo run build",
+    "dashboard:canary": "node scripts/check-dashboard-live.mjs",
+    "dashboard:deploy-summary:verify": "node scripts/verify-dashboard-deploy-summary.mjs",
+    "demo:flow": "pnpm --filter @aidenid/demo-portal... build && pnpm --filter @aidenid/demo-portal demo-flow",
+    "generate:openapi": "pnpm --filter @aidenid/common-schemas build && node packages/common-schemas/scripts/generate-openapi.mjs",
+    "lint": "eslint .",
+    "load-smoke:ci": "vitest run packages/verifier-node/tests/latency.test.ts",
+    "security:iac": "node scripts/security-scan.mjs iac",
+    "security:sast": "node scripts/security-scan.mjs sast",
+    "security:sbom": "node scripts/generate-ci-sbom.mjs",
+    "security:sbom:verify": "node scripts/verify-ci-sbom.mjs",
+    "security:secrets": "node scripts/security-scan.mjs secrets",
+    "sdk:pack": "node scripts/pack-verifier-sdk.mjs",
+    "sdk:verify": "node scripts/verify-verifier-sdk-pack.mjs",
+    "stream-latency:ci": "node scripts/run-stream-latency-proof.mjs",
+    "test": "pnpm --filter @aidenid/common-schemas build && pnpm --filter @aidenid/eventing build && pnpm --filter @aidenid/policy-engine build && pnpm --filter @aidenid/crypto build && pnpm --filter @aidenid/fingerprint-sidecar build && pnpm --filter @aidenid/transparency build && pnpm --filter @aidenid/verifier-node build && pnpm --filter @aidenid/operator-reputation build && pnpm --filter @aidenid/control-plane build && pnpm --filter @aidenid/verifier-app build && pnpm --filter @aidenid/registry build && pnpm --filter @aidenid/authorized-benchmark build && vitest run --passWithNoTests",
+    "typecheck": "turbo run typecheck && tsc -p tsconfig.test.json --noEmit"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "prettier": "^3.6.2",
+    "turbo": "^2.6.3",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.3",
+    "vite": "8.0.16",
+    "vitest": "^4.0.8"
+  }
+}

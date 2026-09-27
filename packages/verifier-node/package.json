@@ -1,0 +1,30 @@
+{
+  "name": "@aidenid/verifier-node",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "templates",
+    "README.md"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./templates/github/aidenid-omar-gate.yml": "./templates/github/aidenid-omar-gate.yml"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "pnpm --filter @aidenid/common-schemas build && pnpm --filter @aidenid/policy-engine build && pnpm --filter @aidenid/crypto build && pnpm --filter @aidenid/fingerprint-sidecar build && tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@aidenid/common-schemas": "workspace:*",
+    "@aidenid/crypto": "workspace:*",
+    "@aidenid/fingerprint-sidecar": "workspace:*",
+    "@aidenid/policy-engine": "workspace:*"
+  }
+}
