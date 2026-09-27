@@ -263,6 +263,24 @@ export async function revokeChain(
       })
     );
     const grant = await services.store.getGrantByChainId(revocation.chainId);
+    // Revocation is terminal for the delegation itself, not only for tokens already issued.
+    // Bumping the epoch invalidates outstanding session tokens at the verifier, but
+    // /v1/sessions/exchange refuses only on grant.revokedAt, which nothing used to set: a
+    // revoked chain could mint a fresh session stamped with the new epoch immediately.
+    // Mark the grant revoked under the same lease so the exchange path fails closed.
+    // Idempotent: a second revoke bumps the epoch again but keeps the first revokedAt.
+    if (grant !== undefined && grant.revokedAt === undefined) {
+      await services.store.revokeGrant(grant.id, occurredAt);
+      await services.outbox.publish(
+        makeOutboxEvent(prefixedId("evt"), "GRANT_REVOKED_HASH", {
+          grant_id: grant.id,
+          chain_id: revocation.chainId,
+          site_id: grant.siteId,
+          epoch: revocation.epoch,
+          actor_id: revocation.actorId
+        })
+      );
+    }
     await enqueuePersonaAudit(services, {
       triggerType: "revocation_epoch",
       siteId: grant?.siteId,
@@ -276,6 +294,46 @@ export async function revokeChain(
   } finally {
     await lease.release();
   }
+}
+
+export type ChainAuthorityStatus =
+  | { readonly current: true; readonly epoch: number }
+  | {
+      readonly current: false;
+      readonly reason: "unknown_chain" | "grant_revoked" | "grant_expired" | "epoch_stale";
+      readonly epoch: number;
+    };
+
+/**
+ * Per-chain authority check for a co-located effect boundary.
+ *
+ * The verifier hot path compares a session token's revocation_epoch against ONE global
+ * minimum (AIDENID_VERIFIER_MIN_REVOCATION_EPOCH / rollback.globalRevocationEpoch), so a
+ * per-chain revocation is invisible to it unless the global floor is raised for every chain.
+ * A protected route that shares the control-plane store calls this after the verifier says
+ * allow, with the chain_id and revocation_epoch claims of the verified token, and refuses
+ * unless the chain is current. No network, no model call: store reads only.
+ */
+export async function checkChainAuthority(
+  services: Pick<ControlPlaneServices, "store">,
+  input: { readonly chainId: string; readonly tokenRevocationEpoch: number; readonly now?: Date | undefined }
+): Promise<ChainAuthorityStatus> {
+  const grant = await services.store.getGrantByChainId(input.chainId);
+  const epoch = await services.store.currentEpoch(input.chainId);
+  if (grant === undefined) {
+    return { current: false, reason: "unknown_chain", epoch };
+  }
+  if (grant.revokedAt !== undefined) {
+    return { current: false, reason: "grant_revoked", epoch };
+  }
+  const nowMs = (input.now ?? new Date()).getTime();
+  if (Date.parse(grant.expiresAt) <= nowMs) {
+    return { current: false, reason: "grant_expired", epoch };
+  }
+  if (input.tokenRevocationEpoch !== epoch) {
+    return { current: false, reason: "epoch_stale", epoch };
+  }
+  return { current: true, epoch };
 }
 
 /** Internal test seam: reset module-level state. */
